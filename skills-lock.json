@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "skills": {
+    "code-reviewer": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/code-reviewer/SKILL.md",
+      "computedHash": "e1c352bffc009656577b88ae4da454d47eb05af2a6ef3027cd2a38c9f410b627"
+    },
+    "debugging-wizard": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging-wizard/SKILL.md",
+      "computedHash": "dd627138395b8b0c2cef01e7823c1042d0499a156692dc53a3e99fd08062f275"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
+    },
+    "fullstack-guardian": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/fullstack-guardian/SKILL.md",
+      "computedHash": "3eddd40f8ee78912e7c22c264f02f613e68e837d8fbccddb40f0d09a78a8ecfa"
+    },
+    "javascript-pro": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/javascript-pro/SKILL.md",
+      "computedHash": "f5d5168a6f16623d2a60cbb94d38dc44465b3157edc8b5882136272b11e2d76b"
+    },
+    "nestjs-expert": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nestjs-expert/SKILL.md",
+      "computedHash": "a2415fb5d798ec5c2b27b2e683dc889dbad0a41809951339faf8be9589d55ad7"
+    },
+    "nextjs-developer": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-developer/SKILL.md",
+      "computedHash": "cf742be11dca9d4fd0cfc687276ba14a90fe9e311b957b331c2d99dbc6bf1e70"
+    },
+    "playwright-expert": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/playwright-expert/SKILL.md",
+      "computedHash": "a1282947ea3395d8db29e5e7fdc6633fe8ff72f50859d0e2fbb0e5fa1f59831e"
+    },
+    "react-expert": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-expert/SKILL.md",
+      "computedHash": "f8591b283d78a1ccb4456766c29ce29df5e0f7af041f3bb695f891d0eee4e770"
+    },
+    "secure-code-guardian": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/secure-code-guardian/SKILL.md",
+      "computedHash": "4fa12f4ca28613e1e1afd2e8e2dd0fa3c865efd4d4c8551bcc0110bfd7ca65d4"
+    },
+    "security-reviewer": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/security-reviewer/SKILL.md",
+      "computedHash": "6d3dbe451e8b096996f2862fd32882efef8b9cf7aa4aa5312a601fe34d54ff67"
+    },
+    "sql-pro": {
+      "source": "farmage/opencode-skills",
+      "sourceType": "github",
+      "skillPath": "skills/sql-pro/SKILL.md",
+      "computedHash": "3ab958a5454a2ff2bc4ff0f4004c3a3050a2449d13d0cfa1f20c90cfbb690a95"
+    }
+  }
+}
