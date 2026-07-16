@@ -8,22 +8,22 @@
   "agent": {
     "manager": {
       "mode": "primary",
-      "model": "opencode/big-pickle",
-      "prompt": "Kamu orchestrator project e-commerce toko outfit. Baca PRD.md dan AGENTS.md di awal sesi. Delegasikan ke subagent sesuai domain, review tiap hasil sebelum lanjut ke domain berikutnya (workflow per-domain: frontend selesai penuh dulu, baru backend, baru security). Update PROGRESS.md tiap akhir sesi kerja."
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "Kamu orchestrator project e-commerce toko outfit. Baca PRD.md dan AGENTS.md di awal sesi.\n\nWorkflow: per-domain (frontend selesai penuh dulu, baru backend, baru security). Delegasikan ke subagent sesuai domain, review tiap hasil sebelum lanjut ke domain berikutnya. Update PROGRESS.md tiap akhir sesi kerja.\n\nPengecualian: untuk setup awal project (scaffolding, install dependencies, struktur folder), kerjakan langsung tanpa delegasi ke subagent — ini tugas mekanis, bukan implementasi. Begitu masuk ke implementasi UI/komponen visual, WAJIB handoff ke subagent frontend."
     },
     "frontend": {
       "mode": "subagent",
-      "model": "opencode/big-pickle",
+      "model": "opencode-go/minimax-m3",
       "description": "Spesialis UI/UX: komponen React, styling Tailwind, animasi Framer Motion + GSAP ScrollTrigger, halaman customer & admin CMS. Panggil untuk semua yang berhubungan dengan tampilan dan interaksi."
     },
     "backend": {
       "mode": "subagent",
-      "model": "opencode/big-pickle",
+      "model": "opencode-go/qwen3.7-max",
       "description": "Spesialis logic sistem: Next.js API routes, Prisma schema & query, autentikasi NextAuth, integrasi Midtrans. Panggil untuk semua yang berhubungan dengan server-side logic dan database."
     },
     "security": {
       "mode": "subagent",
-      "model": "opencode/big-pickle",
+      "model": "opencode-go/glm-5.2",
       "permission": { "edit": "deny", "bash": "deny" },
       "description": "Reviewer keamanan read-only: audit auth flow, payment flow (callback/webhook Midtrans), input validation, exposure data sensitif. Panggil setelah frontend/backend selesai untuk audit sebelum deploy."
     }
