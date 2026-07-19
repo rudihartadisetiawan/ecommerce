@@ -1,0 +1,150 @@
+// E-commerce GAUL — schema sesuai Kontrak Data (PRD.md bagian 5)
+// ponytail: field array (sizes/colors/images) disimpan Json karena MySQL Prisma
+// tidak mendukung scalar list native; representasi array tetap setara.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  customer
+  admin
+  super_admin
+}
+
+enum OrderStatus {
+  pending
+  paid
+  processing
+  shipped
+  completed
+  cancelled
+}
+
+enum NotificationType {
+  new_collection
+  promo
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  role         Role     @default(customer)
+  createdAt    DateTime @default(now())
+
+  orders       Order[]
+  reviews      Review[]
+  wishlists    Wishlist[]
+  chatMessages ChatMessage[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String   @db.Text
+  price       Int
+  category    String
+  sizes       Json
+  colors      Json
+  images      Json
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+  reviews    Review[]
+  wishlists  Wishlist[]
+}
+
+model Order {
+  id        String      @id
+  user      User?       @relation(fields: [userId], references: [id])
+  userId    Int?
+  status    OrderStatus @default(pending)
+  total     Int
+  shippingAddress String @db.Text
+  paymentMethod    String
+  paymentRef       String?
+  snapToken        String? @db.Text  // Midtrans Snap token — reuse saat retry bayar
+  trackingNumber   String? // Nomor resi pengiriman (AWB)
+  receivedProofImage String? @db.Text // Bukti foto penerimaan paket oleh pembeli
+  createdAt DateTime    @default(now())
+
+  items   OrderItem[]
+  reviews Review[]
+}
+
+model OrderItem {
+  id              Int     @id @default(autoincrement())
+  order           Order   @relation(fields: [orderId], references: [id])
+  orderId         String
+  product         Product? @relation(fields: [productId], references: [id])
+  productId       Int?
+  variant         Json
+  qty             Int
+  priceAtPurchase Int
+}
+
+model HeroSection {
+  id        Int     @id @default(autoincrement())
+  imageUrl  String
+  title     String
+  subtitle  String
+  ctaText   String
+  ctaLink   String
+  isActive  Boolean @default(true)
+  order     Int     @default(0)
+}
+
+model Wishlist {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  @@unique([userId, productId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  order     Order?   @relation(fields: [orderId], references: [id])
+  orderId   String?
+  rating    Int
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id      Int              @id @default(autoincrement())
+  type    NotificationType
+  title   String
+  message String  @db.Text
+  sentAt  DateTime @default(now())
+}
+
+model ChatMessage {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  sender      Role     @default(customer)
+  messageType String   @default("text")  // text | product
+  message     String   @db.Text
+  metadata    Json?    // { productId: Int, ... }
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}

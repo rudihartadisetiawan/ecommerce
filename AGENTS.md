@@ -33,6 +33,29 @@ AGENTS.md
 PROGRESS.md            → status tracking antar sesi (wajib diupdate tiap handoff)
 ```
 
+## Design Tokens
+
+### Palette (Tailwind v4 `@theme`)
+| Token | Hex | Usage |
+|---|---|---|
+| `--color-bg-warm` | `#FAFAF7` | Page background |
+| `--color-bg-section` | `#F0EDE6` | Section alternate background |
+| `--color-surface` | `#FFFFFF` | Cards, containers |
+| `--color-text-primary` | `#1C1C1A` | Body, headings |
+| `--color-text-secondary` | `#6B655A` | Labels, captions |
+| `--color-accent` | `#D4A373` | Highlights, CTAs, decorative |
+
+### Typography
+| Role | Font | Fallback |
+|---|---|---|
+| Display (headline) | `DM Serif Display` | `serif` |
+| Body | `DM Sans` | `sans-serif` |
+
+Pasangan serif+sans dari keluarga yang beda — display pakai serif editorial untuk headline besar, body pakai sans geometric yang bersih.
+
+### Signature
+**Hero scroll-storytelling**: gambar produk bertransformasi saat scroll, headline terbelah dengan reveal animation, fade-in/slide-up tiap seksi — ala editorial fashion spread Apple.
+
 ## Kontrak Data
 Rujuk ke `PRD.md` bagian "Kontrak Data" — SEMUA agent (frontend & backend) WAJIB
 memakai skema ini apa adanya. Kalau ada kebutuhan mengubah skema di tengah jalan,

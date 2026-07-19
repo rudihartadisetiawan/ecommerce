@@ -1,4 +1,4 @@
-# Secret Scanning
+opencode# Secret Scanning
 
 ## Gitleaks
 
