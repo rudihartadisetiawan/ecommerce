@@ -1,7 +1,7 @@
 ---
 project: ecommerce-gaul
 last_session: 2026-07-19
-current_focus: project-complete-dod
+current_focus: admin-cart-guard-fix
 ---
 
 # Progress Log
@@ -520,6 +520,40 @@ Security subagent melakukan audit read-only — 15 temuan (1 Critical, 2 High, 3
 ### Next action
 - Semua domain selesai (Frontend 100%, Backend 100%, Security 100%, E2E 14/14 pass)
 - Project siap untuk production deployment (Vercel + Railway/PlanetScale/Aiven)
+
+---
+
+## Admin Guard — Blokir Akses Cart/Checkout untuk Admin (sesi 2026-07-19)
+
+### Latar belakang
+User dengan role `admin` / `super_admin` sebelumnya bisa menambahkan produk ke keranjang dan checkout seperti customer biasa — tidak sesuai karena mereka harusnya mengelola toko dari CMS, bukan berbelanja.
+
+### Perbaikan (4 titik)
+
+| # | Titik | File | Perubahan |
+|---|---|---|---|
+| 1 | **Navigation** | `components/shop/Navigation.js` | Ikon cart disembunyikan untuk admin (desktop & mobile). Admin cuma lihat link CMS. |
+| 2 | **Cart page** | `app/(shop)/cart/page.js` | Guard — redirect admin ke `/admin` jika nekat akses langsung |
+| 3 | **Checkout page** | `app/(shop)/checkout/page.js` | Guard — redirect admin ke `/admin` jika nekat akses langsung |
+| 4 | **Add-to-cart** | `app/(shop)/produk/[slug]/page.js` | `handleAddToCart` redirect admin ke `/admin` |
+
+### Bug fix terkait
+- **`session is not defined`** di `ProductDetailPage`: `const { status } = useSession()` → `const { data: session, status } = useSession()` (agar variable `session` tersedia untuk guard admin di `handleAddToCart`)
+
+### Keputusan penting
+- Guard di 4 titik (nav, cart, checkout, add-to-cart) — defense in depth, bukan cuma di satu tempat
+- Admin tetap bisa akses halaman akun (`/account/profile`, dll) — mereka mungkin perlu lihat data personal
+- CSS class `flex.flex-wrap.gap-2` untuk size buttons dan `flex.flex-wrap.gap-3` untuk color swatches — selector stabil untuk E2E test
+
+### Build
+✅ Clean, 34 routes
+
+### E2E Tests
+✅ 14/14 passing (auth-flow 4, admin-flow 4, shop-flow 6)
+
+### Next action
+- Project siap untuk deployment production (Vercel + MySQL free-tier)
+- Opsi lanjutan: fitur P2 (newsletter, rekomendasi produk), live chat improvement (SSE real-time), GitHub Actions CI
 
 ---
 
