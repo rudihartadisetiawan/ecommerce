@@ -27,6 +27,7 @@ dev-server*.log
 # playwright
 playwright-report/
 test-results/
+e2e-debug-*
 
 # typescript
 *.tsbuildinfo
