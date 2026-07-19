@@ -30,13 +30,12 @@ test.describe('Shop Flow', () => {
     await page.goto('/produk/cotton-tee')
     await page.waitForFunction(() => document.querySelector('h1'), { timeout: 10000 })
 
-    // Select size M to enable the add-to-cart button
-    await page.locator('button').filter({ hasText: 'M' }).first().click()
+    // Select size M from the Ukuran section (div.mt-8 > div.flex.flex-wrap.gap-2 > buttons)
+    await page.locator('div.flex.flex-wrap.gap-2 button').filter({ hasText: 'M' }).click()
     await page.waitForTimeout(200)
 
-    // Select first color swatch
-    const swatch = page.locator('div:has(> p:has-text("Warna")) button').first()
-    await swatch.click()
+    // Select first color swatch from the Warna section
+    await page.locator('div.flex.flex-wrap.gap-3 button').first().click()
     await page.waitForTimeout(200)
 
     // Now button should be enabled and clicking it redirects to login
@@ -69,13 +68,12 @@ test.describe('Shop Flow', () => {
     await page.goto('/produk/cotton-tee')
     await page.waitForFunction(() => document.querySelector('h1'), { timeout: 10000 })
 
-    // Select size M
-    await page.locator('button').filter({ hasText: 'M' }).first().click()
+    // Select size M from the Ukuran section
+    await page.locator('div.flex.flex-wrap.gap-2 button').filter({ hasText: 'M' }).click()
     await page.waitForTimeout(200)
 
-    // Select first color swatch
-    const swatch = page.locator('div:has(> p:has-text("Warna")) button').first()
-    await swatch.click()
+    // Select first color swatch from the Warna section
+    await page.locator('div.flex.flex-wrap.gap-3 button').first().click()
     await page.waitForTimeout(200)
 
     // Add to cart (button should now be enabled)

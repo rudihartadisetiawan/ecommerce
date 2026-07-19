@@ -2,6 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useCart } from '@/lib/cart-context'
 import Navigation from '@/components/shop/Navigation'
 import CartItem from '@/components/shop/CartItem'
@@ -9,7 +11,16 @@ import Container from '@/components/ui/Container'
 
 export default function CartPage() {
   const { items, removeItem, updateQty, subtotal } = useCart()
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const total = subtotal
+
+  // ponytail: admin tidak punya akses ke cart
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin'
+  if (status === 'authenticated' && isAdmin) {
+    router.push('/admin')
+    return null
+  }
 
   if (items.length === 0) {
     return (

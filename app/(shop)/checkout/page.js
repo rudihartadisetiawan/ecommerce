@@ -130,6 +130,12 @@ export default function CheckoutPage() {
   }
   if (status !== 'authenticated') return null
 
+  // ponytail: admin tidak punya akses ke checkout
+  if (session?.user?.role === 'admin' || session?.user?.role === 'super_admin') {
+    router.push('/admin')
+    return null
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const newErrors = {}

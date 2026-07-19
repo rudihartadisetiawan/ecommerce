@@ -19,7 +19,7 @@ function formatPrice(price) {
 export default function ProductDetailPage() {
   const { slug } = useParams()
   const router = useRouter()
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const { addItem } = useCart()
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
@@ -69,13 +69,19 @@ export default function ProductDetailPage() {
       router.push(`/account/login?callbackUrl=/produk/${slug}`)
       return
     }
+    // ponytail: admin tidak punya akses ke cart
+    const role = session?.user?.role
+    if (role === 'admin' || role === 'super_admin') {
+      router.push('/admin')
+      return
+    }
     if (addingRef.current || !selectedSize || !selectedColor) return
     addingRef.current = true
     const colorObj = product?.colors?.find(c => c.hex === selectedColor)
     addItem(product, selectedSize, { name: colorObj?.name || selectedColor, hex: selectedColor })
     setAdded(true)
     setTimeout(() => { setAdded(false); addingRef.current = false }, 2000)
-  }, [selectedSize, selectedColor, product, addItem, status, router, slug])
+  }, [selectedSize, selectedColor, product, addItem, status, session, router, slug])
 
   const handleToggleWishlist = async () => {
     if (status !== 'authenticated') {
