@@ -36,6 +36,17 @@
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-github"]
     },
+    "vitest-runner": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@madrus/vitest-mcp-server@latest"
+      ],
+      "environment": {
+        "VITEST_PROJECT_DIR": "D:\\1.porto\\1.web dev\\ecommerce-gaul"
+      }
+    },
     "mysql": {
       "type": "local",
       "command": ["npx", "-y", "@benborla29/mcp-server-mysql"],

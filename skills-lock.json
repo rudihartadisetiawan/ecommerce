@@ -72,6 +72,12 @@
       "sourceType": "github",
       "skillPath": "skills/sql-pro/SKILL.md",
       "computedHash": "3ab958a5454a2ff2bc4ff0f4004c3a3050a2449d13d0cfa1f20c90cfbb690a95"
+    },
+    "typo-checker": {
+      "source": "antfu/vitest",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/typo-checker/SKILL.md",
+      "computedHash": "a275516abbb8219b9084199b0230c8f496e89f8b9fe47139ab1baa880a372c87"
     }
   }
 }
