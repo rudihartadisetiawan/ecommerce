@@ -10,7 +10,10 @@ import Navigation from '../../../../components/shop/Navigation'
 import ProductCard from '../../../../components/shop/ProductCard'
 import Container from '../../../../components/ui/Container'
 import Footer from '../../../../components/shop/Footer'
+import { Skeleton } from '../../../../components/ui/Skeleton'
 import { useCart } from '@/lib/cart-context'
+import { addRecentlyViewed } from '@/lib/recently-viewed'
+import ImageMagnifier from '@/components/ui/ImageMagnifier'
 
 function formatPrice(price) {
   return `Rp${price.toLocaleString('id-ID')}`
@@ -33,12 +36,17 @@ export default function ProductDetailPage() {
   const addingRef = useRef(false)
 
   useEffect(() => {
+    document.title = product ? `${product.name} — GAUL Daily Outfit` : 'GAUL — Daily Outfit'
+  }, [product])
+
+  useEffect(() => {
     setLoading(true)
     fetch(`/api/products/slug/${slug}`)
       .then(r => r.json())
       .then(d => {
         setProduct(d)
         setLoading(false)
+        addRecentlyViewed(d)
         if (d?.id) {
           fetch(`/api/reviews?productId=${d.id}`)
             .then(r => r.json())
@@ -52,9 +60,10 @@ export default function ProductDetailPage() {
               .catch(() => {})
           }
         }
-        fetch('/api/products')
+        fetch('/api/products?limit=100')
           .then(r => r.json())
-          .then(all => {
+          .then(d2 => {
+            const all = Array.isArray(d2) ? d2 : (d2.products || [])
             const sameCat = all.filter(p => p.slug !== slug && p.category === d.category)
             const diffCat = all.filter(p => p.slug !== slug && p.category !== d.category)
             setRelated([...sameCat, ...diffCat].slice(0, 4))
@@ -110,7 +119,30 @@ export default function ProductDetailPage() {
     return (
       <>
         <Navigation />
-        <main className="pt-24 pb-20"><Container><p className="text-sm text-[var(--color-text-secondary)]">Memuat...</p></Container></main>
+        <main className="pt-24 pb-20">
+          <Container>
+            <Skeleton className="mb-6 h-4 w-48" />
+            <div className="lg:flex lg:gap-10 xl:gap-14">
+              <div className="mb-8 lg:sticky lg:top-28 lg:mb-0 lg:w-[45%] xl:w-[48%]">
+                <Skeleton className="aspect-[9/11] w-full" />
+              </div>
+              <div className="flex-1 space-y-6">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <div className="flex gap-2">
+                  {[1,2,3,4].map(i => <Skeleton key={i} className="h-10 w-16" />)}
+                </div>
+                <div className="flex gap-3">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-8 rounded-full" />)}
+                </div>
+                <Skeleton className="h-14 w-full rounded-full" />
+              </div>
+            </div>
+          </Container>
+        </main>
       </>
     )
   }
@@ -162,10 +194,10 @@ export default function ProductDetailPage() {
 
               {/* Desktop: main image + thumbnails */}
               <div className="hidden lg:block">
-                <div className="relative mb-3 aspect-[9/11] overflow-hidden rounded-2xl bg-[var(--color-bg-section)] group">
+                <div className="relative mb-3">
                   {images.map((img, i) => (
-                    <div key={i} className={`absolute inset-0 transition-opacity duration-300 ${i === selectedImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                      <Image src={img} alt={`${product.name} ${i + 1}`} width={900} height={1100} className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110" priority={i === 0} />
+                    <div key={i} className={`${i === selectedImage ? 'block' : 'hidden'}`}>
+                      <ImageMagnifier src={img} alt={`${product.name} ${i + 1}`} width={900} height={1100} priority={i === 0} />
                     </div>
                   ))}
                 </div>

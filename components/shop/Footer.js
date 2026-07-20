@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Container from '../ui/Container'
 
@@ -18,8 +19,70 @@ const footerAccount = [
 ]
 
 export default function Footer() {
+  const [newsletterEmail, setNewsletterEmail] = useState('')
+  const [newsletterStatus, setNewsletterStatus] = useState('idle') // idle | success | error
+
+  const handleNewsletter = (e) => {
+    e.preventDefault()
+    if (!newsletterEmail || !/\S+@\S+\.\S+/.test(newsletterEmail)) return
+    try {
+      const existing = JSON.parse(localStorage.getItem('gaul_newsletter') || '[]')
+      if (!existing.includes(newsletterEmail)) {
+        existing.push(newsletterEmail)
+        localStorage.setItem('gaul_newsletter', JSON.stringify(existing))
+      }
+      setNewsletterStatus('success')
+      setNewsletterEmail('')
+    } catch {
+      setNewsletterStatus('error')
+    }
+  }
+
   return (
     <footer className="bg-[var(--color-text-primary)] text-white/70">
+      {/* Newsletter Section */}
+      <div className="border-b border-white/10 px-6 py-10 sm:py-14">
+        <Container>
+          <div className="mx-auto max-w-xl text-center">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/40">
+              Newsletter
+            </p>
+            <h3 className="font-[var(--font-display)] text-2xl text-white sm:text-3xl">
+              Dapatkan Info Koleksi Terbaru
+            </h3>
+            <p className="mt-2 text-sm text-white/50">
+              Daftar untuk mendapat notifikasi koleksi baru dan promo spesial
+              langsung di email kamu.
+            </p>
+            <form onSubmit={handleNewsletter} className="mx-auto mt-6 flex max-w-md gap-2">
+              <input
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                placeholder="email@example.com"
+                className="flex-1 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/40"
+              />
+              <button
+                type="submit"
+                className="shrink-0 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-all hover:brightness-110"
+              >
+                Daftar
+              </button>
+            </form>
+            {newsletterStatus === 'success' && (
+              <p className="mt-3 text-xs text-green-400">
+                ✓ Berhasil terdaftar! Kami akan mengirim notifikasi ke email kamu.
+              </p>
+            )}
+            {newsletterStatus === 'error' && (
+              <p className="mt-3 text-xs text-red-400">
+                Gagal menyimpan. Coba lagi.
+              </p>
+            )}
+          </div>
+        </Container>
+      </div>
+
       {/* Main footer */}
       <div className="py-16 sm:py-20">
         <Container>

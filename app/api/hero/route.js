@@ -32,5 +32,18 @@ export async function POST(request) {
       order: body.order ?? 0,
     },
   })
+  // Trigger notifikasi promo jika hero memiliki subtitle/cta (indikasi kampanye)
+  try {
+    if (hero.subtitle || hero.ctaText) {
+      await prisma.notification.create({
+        data: {
+          type: 'promo',
+          title: hero.title,
+          message: hero.subtitle || `Cek koleksi terbaru GAUL sekarang!`,
+          link: hero.ctaLink?.replace(/^\//, '') || 'produk',
+        },
+      })
+    }
+  } catch {}
   return NextResponse.json(hero, { status: 201 })
 }

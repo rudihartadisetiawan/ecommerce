@@ -25,6 +25,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([])
   const [printOrder, setPrintOrder] = useState(null)
   const [filterTab, setFilterTab] = useState('active') // 'all' | 'active' | 'pending' | 'processing' | 'shipped' | 'archive'
+  const [exporting, setExporting] = useState(false)
 
   // Modal Resi State
   const [shipModalOrder, setShipModalOrder] = useState(null)
@@ -291,6 +292,17 @@ export default function AdminOrdersPage() {
                   )
                 })}
               </div>
+
+              <button
+                onClick={() => { setExporting(true); window.open('/api/orders/export', '_blank'); setTimeout(() => setExporting(false), 2000) }}
+                disabled={exporting}
+                className="flex items-center gap-2 rounded-full border border-[var(--color-text-secondary)]/20 bg-white px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                {exporting ? 'Mengunduh…' : 'Export CSV'}
+              </button>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] shadow-sm">

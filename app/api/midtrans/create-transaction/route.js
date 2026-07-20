@@ -16,7 +16,7 @@ export async function POST(request) {
   })
   if (!order) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
-  if (order.userId !== Number(session.user.id) && session.user.role !== 'admin' && session.user.role !== 'super_admin') {
+  if (order.userId && order.userId !== Number(session.user.id) && session.user.role !== 'admin' && session.user.role !== 'super_admin') {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
   }
   if (order.status !== 'pending') {

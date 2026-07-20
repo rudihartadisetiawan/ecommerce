@@ -4,8 +4,18 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 
+// ponytail: wrapper kecil — hanya 1 hook, return null atau render ChatWidget. Mencegah hooks mismatch.
+export function ChatWidgetWrapper() {
+  const { data: session, status } = useSession()
+  if (status !== 'authenticated' || (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin')) {
+    return <ChatWidget />
+  }
+  return null
+}
+
+// ponytail: string ID prefix agar tidak collate dengan integer ID dari DB
 const initialMockMessages = [
-  { id: 1, sender: 'admin', text: 'Halo! Selamat datang di GAUL. Ada yang bisa kami bantu seputar ukuran atau stok produk?', time: '14:00', messageType: 'text' },
+  { id: 'mock-1', sender: 'admin', text: 'Halo! Selamat datang di GAUL. Ada yang bisa kami bantu seputar ukuran atau stok produk?', time: '14:00', messageType: 'text' },
 ]
 
 const quickQuestions = [
@@ -31,6 +41,101 @@ function TypingDots() {
         />
       ))}
     </div>
+  )
+}
+
+function ProductPickerModal({ open, onClose, onPick }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open) { setQuery(''); setResults([]); return }
+    const t = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const url = query.trim()
+          ? `/api/products?q=${encodeURIComponent(query.trim())}`
+          : `/api/products`
+        const res = await fetch(url)
+        if (res.ok) { const data = await res.json(); setResults(Array.isArray(data) ? data : (data.products || [])) }
+      } catch {} finally {
+        setLoading(false)
+      }
+    }, 250)
+    return () => clearTimeout(t)
+  }, [query, open])
+
+  if (!open) return null
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+        >
+          <div className="flex items-center justify-between border-b border-[var(--color-bg-section)] p-4">
+            <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Bagikan Produk ke CS</h3>
+            <button onClick={onClose} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="border-b border-[var(--color-bg-section)] p-3">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+              placeholder="Cari produk yang ingin ditanyakan..."
+              className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-[var(--color-bg-warm)]/50 px-4 py-2.5 text-xs outline-none focus:border-[var(--color-accent)]"
+            />
+          </div>
+          <div className="max-h-[400px] overflow-y-auto p-3">
+            {loading ? (
+              <p className="py-8 text-center text-xs text-[var(--color-text-secondary)]">Mencari produk…</p>
+            ) : results.length === 0 ? (
+              <p className="py-8 text-center text-xs text-[var(--color-text-secondary)]">Tidak ada produk ditemukan</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {results.map(p => {
+                  const img = Array.isArray(p.images) ? p.images[0] : p.image
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => onPick(p)}
+                      className="group flex flex-col items-stretch overflow-hidden rounded-xl border border-[var(--color-bg-section)] bg-white text-left transition-all hover:border-[var(--color-accent)] hover:shadow-md"
+                    >
+                      <div className="aspect-square w-full overflow-hidden bg-[var(--color-bg-section)]">
+                        {img && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={img} alt={p.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                        )}
+                      </div>
+                      <div className="p-2">
+                        <p className="line-clamp-2 text-[11px] font-semibold leading-tight text-[var(--color-text-primary)]">{p.name}</p>
+                        <p className="mt-1 text-[11px] font-bold text-[var(--color-accent)]">{formatRupiah(p.price)}</p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
@@ -72,11 +177,13 @@ export default function ChatWidget() {
   const [inputText, setInputText] = useState('')
   const [unreadCount, setUnreadCount] = useState(1)
   const [isAdminTyping, setIsAdminTyping] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
   const messagesEndRef = useRef(null)
   const typingTimeoutRef = useRef(null)
   const lastTypingSentRef = useRef(0)
 
-  const fetchInitial = useCallback(async () => {
+  // Load initial messages — prepend mock greeting only if no messages from API
+  const loadInitial = useCallback(async () => {
     if (status !== 'authenticated') return
     try {
       const res = await fetch('/api/chat')
@@ -90,16 +197,39 @@ export default function ChatWidget() {
     } catch {}
   }, [status])
 
+  // Poll — fetch messages WITHOUT prepending mock greeting (mencegah duplikasi)
+  const pollMessages = useCallback(async () => {
+    if (status !== 'authenticated') return
+    try {
+      const res = await fetch('/api/chat')
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id))
+            const newOnes = data.filter(m => !existingIds.has(m.id))
+            if (newOnes.length === 0) return prev
+            // Keep mock greeting if present, append only new messages at correct positions
+            const mock = prev.find(m => m.id === 'mock-1')
+            const rest = prev.filter(m => m.id !== 'mock-1')
+            const merged = [...rest, ...newOnes].sort((a, b) => a.id - b.id)
+            return mock ? [mock, ...merged] : merged
+          })
+        }
+      }
+    } catch {}
+  }, [status])
+
   // ponytail: SSE for real-time; fall back to polling if EventSource unavailable.
   useEffect(() => {
     if (status !== 'authenticated') return
     if (typeof window === 'undefined' || !window.EventSource) {
-      fetchInitial()
-      const interval = setInterval(fetchInitial, 4000)
+      loadInitial()
+      const interval = setInterval(pollMessages, 4000)
       return () => clearInterval(interval)
     }
 
-    fetchInitial()
+    loadInitial()
 
     const es = new EventSource('/api/chat/stream')
     es.onmessage = (ev) => {
@@ -120,7 +250,7 @@ export default function ChatWidget() {
     }
 
     return () => es.close()
-  }, [status, fetchInitial])
+  }, [status, loadInitial, pollMessages])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -176,11 +306,21 @@ export default function ChatWidget() {
 
     if (status === 'authenticated') {
       try {
-        await fetch('/api/chat', {
+        const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: content.trim() }),
         })
+        if (res.ok) {
+          const data = await res.json()
+          // Remove optimistic placeholder + any SSE-arrived duplicate (same real id),
+          // then add the real message once. This handles all race conditions:
+          // SSE before response → SSE message removed + re-added; SSE after → id match skips.
+          setMessages(prev => {
+            const filtered = prev.filter(m => m.id !== userMsg.id && m.id !== data.id)
+            return [...filtered, { ...data, text: data.text || content.trim() }]
+          })
+        }
       } catch {}
     } else {
       setTimeout(() => {
@@ -196,6 +336,26 @@ export default function ChatWidget() {
         ])
       }, 1200)
     }
+  }
+
+  const handleShareProduct = async (product) => {
+    setPickerOpen(false)
+    if (status !== 'authenticated') return
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        // Dedup: remove any SSE-arrived copy before adding, prevents double append
+        setMessages(prev => {
+          if (prev.some(m => m.id === data.id)) return prev // SSE already added it
+          return [...prev, { ...data, text: data.text || product.name }]
+        })
+      }
+    } catch {}
   }
 
   return (
@@ -355,6 +515,18 @@ export default function ChatWidget() {
                   placeholder="Ketik pesan untuk CS..."
                   className="flex-1 rounded-full border border-[var(--color-text-secondary)]/20 bg-[var(--color-bg-warm)]/60 px-4 py-2 text-xs outline-none focus:border-[var(--color-accent)]"
                 />
+                {status === 'authenticated' && (
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen(true)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-text-secondary)]/20 bg-white text-[var(--color-text-primary)] transition-all hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white"
+                    title="Bagikan Produk"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={!inputText.trim()}
@@ -369,6 +541,8 @@ export default function ChatWidget() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} onPick={handleShareProduct} />
     </div>
   )
 }

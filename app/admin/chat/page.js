@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 const quickReplies = [
   'Stok ready kak, silakan langsung di-checkout sebelum kehabisan! 😊',
@@ -155,6 +157,13 @@ function ProductMessageCard({ product }) {
 }
 
 export default function AdminChatPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  // ponytail: chat CS tidak tersedia untuk admin/super_admin
+  if (status === 'authenticated' && (session?.user?.role === 'admin' || session?.user?.role === 'super_admin')) {
+    router.push('/admin')
+    return null
+  }
   const [conversations, setConversations] = useState([])
   const [messagesByConv, setMessagesByConv] = useState({})
   const [activeId, setActiveId] = useState(null)
@@ -385,7 +394,7 @@ export default function AdminChatPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-8 flex flex-col bg-white">
+        <div className="lg:col-span-8 flex flex-col bg-white min-h-0">
           {activeConv ? (
             <>
               <div className="flex items-center justify-between border-b border-[var(--color-bg-section)] p-4 bg-[var(--color-bg-warm)]/20">

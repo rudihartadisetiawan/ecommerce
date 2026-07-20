@@ -51,7 +51,8 @@ export default function CheckoutPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  const [form, setForm] = useState({ name: '', phone: '', address: '', zip: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', zip: '' })
+  const isGuest = status !== 'authenticated'
   const [payment, setPayment] = useState('')
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -70,7 +71,30 @@ export default function CheckoutPage() {
   const [shippingError, setShippingError] = useState('')
 
   const shippingCost = selectedShipping?.cost ?? 0
-  const total = subtotal + shippingCost
+  const [couponCode, setCouponCode] = useState('')
+  const [couponDiscount, setCouponDiscount] = useState(0)
+  const [couponError, setCouponError] = useState('')
+  const [couponLoading, setCouponLoading] = useState(false)
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    setCouponError('')
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode.trim(), subtotal }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setCouponError(data.error || 'Kupon tidak valid'); setCouponDiscount(0); setCouponLoading(false); return }
+      setCouponDiscount(data.discount)
+      setCouponError('')
+    } catch { setCouponError('Gagal validasi'); setCouponDiscount(0) }
+    setCouponLoading(false)
+  }
+
+  const total = subtotal + shippingCost - couponDiscount
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
@@ -124,14 +148,9 @@ export default function CheckoutPage() {
     if (selectedCity) fetchShipping(selectedCity.id)
   }, [selectedCity, fetchShipping])
 
-  if (status === 'unauthenticated') {
-    router.push('/account/login?callbackUrl=/checkout')
-    return null
-  }
-  if (status !== 'authenticated') return null
-
+  // ponytail: guest checkout — user tidak perlu login (cukup isi email)
   // ponytail: admin tidak punya akses ke checkout
-  if (session?.user?.role === 'admin' || session?.user?.role === 'super_admin') {
+  if (status === 'authenticated' && (session?.user?.role === 'admin' || session?.user?.role === 'super_admin')) {
     router.push('/admin')
     return null
   }
@@ -140,6 +159,7 @@ export default function CheckoutPage() {
     e.preventDefault()
     const newErrors = {}
     if (!form.name) newErrors.name = 'Wajib diisi'
+    if (isGuest && !form.email) newErrors.email = 'Wajib diisi untuk guest'
     if (!form.phone) newErrors.phone = 'Wajib diisi'
     if (!form.address) newErrors.address = 'Wajib diisi'
     if (!selectedProvince) newErrors.province = 'Pilih provinsi'
@@ -172,6 +192,7 @@ export default function CheckoutPage() {
           paymentMethod: payment,
           shippingCost: selectedShipping.cost,
           shippingCourier: shippingLabel,
+          couponCode: couponDiscount > 0 ? couponCode.trim() : undefined,
         }),
       })
 
@@ -426,6 +447,29 @@ export default function CheckoutPage() {
                     {items.length > 3 && <p className="text-xs text-[var(--color-text-secondary)]">+{items.length - 3} item lainnya</p>}
                   </div>
 
+                  {/* Kupon */}
+                  <div className="mt-4 flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={e => { setCouponCode(e.target.value); setCouponDiscount(0); setCouponError('') }}
+                      placeholder="Kode kupon"
+                      className="flex-1 rounded-xl border border-[var(--color-text-secondary)]/20 bg-white px-3 py-2 text-xs outline-none focus:border-[var(--color-accent)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="rounded-xl bg-[var(--color-text-primary)] px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+                    >
+                      {couponLoading ? '…' : 'Pakai'}
+                    </button>
+                  </div>
+                  {couponError && <p className="mt-1 text-[10px] text-red-500">{couponError}</p>}
+                  {couponDiscount > 0 && (
+                    <p className="mt-1 text-[10px] font-medium text-green-600">Diskon: -Rp{couponDiscount.toLocaleString('id-ID')}</p>
+                  )}
+
                   <div className="mt-4 space-y-2 border-t border-[var(--color-text-secondary)]/20 pt-4 text-sm">
                     <div className="flex justify-between text-[var(--color-text-secondary)]">
                       <span>Subtotal</span>
@@ -440,6 +484,12 @@ export default function CheckoutPage() {
                         }
                       </span>
                     </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Diskon Kupon</span>
+                        <span>-Rp{couponDiscount.toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between font-medium text-[var(--color-text-primary)] border-t border-[var(--color-text-secondary)]/20 pt-2">
                       <span>Total</span>
                       <span>Rp{total.toLocaleString('id-ID')}</span>

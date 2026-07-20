@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `product` ADD COLUMN `costPrice` INTEGER NOT NULL DEFAULT 0;

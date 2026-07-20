@@ -52,12 +52,15 @@ model Product {
   slug        String   @unique
   description String   @db.Text
   price       Int
+  costPrice   Int      @default(0)      // harga modal untuk kalkulasi laba
   category    String
   sizes       Json
   colors      Json
   images      Json
   stock       Int      @default(0)
+  stockPerVariant Json?
   isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -129,11 +132,34 @@ model Review {
   createdAt DateTime @default(now())
 }
 
+model Coupon {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  type        String    @default("percentage")  // percentage | fixed
+  value       Int                               // 10 = 10% atau Rp10.000
+  minPurchase Int       @default(0)
+  maxUses     Int       @default(0)             // 0 = unlimited
+  usedCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
 model Notification {
   id      Int              @id @default(autoincrement())
   type    NotificationType
   title   String
   message String  @db.Text
+  link    String?          // slug produk untuk navigasi langsung
   sentAt  DateTime @default(now())
 }
 

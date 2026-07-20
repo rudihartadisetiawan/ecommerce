@@ -26,7 +26,7 @@ export default function HeroSection() {
   useEffect(() => {
     Promise.all([
       fetch('/api/hero').then(r => r.json()).then(d => d[0] || null),
-      fetch('/api/products').then(r => r.json()).then(d => d.slice(0, 3)),
+      fetch('/api/products?limit=3').then(r => r.json()).then(d => { const arr = Array.isArray(d) ? d : (d.products || []); return arr }),
     ])
       .then(([h, p]) => { setHero(h); setProducts(p); setReady(true) })
       .catch(() => setReady(true))

@@ -10,13 +10,15 @@ const publicPaths = ['/account/login', '/account/register']
 
 export default function AccountLayout({ children }) {
   const pathname = usePathname()
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const isPublic = publicPaths.includes(pathname)
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin'
 
   useEffect(() => {
-    if (!isPublic && status === 'unauthenticated') router.push('/account/login')
-  }, [isPublic, status, router])
+    if (status === 'authenticated' && isAdmin) router.push('/admin')
+    else if (!isPublic && status === 'unauthenticated') router.push('/account/login')
+  }, [isPublic, status, isAdmin, router])
 
   if (!isPublic && status !== 'authenticated') {
     return <div className="flex min-h-screen items-center justify-center text-sm text-[var(--color-text-secondary)]">Memuat...</div>

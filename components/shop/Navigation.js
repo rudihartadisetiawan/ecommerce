@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import Container from '../ui/Container'
 import { useCart } from '@/lib/cart-context'
+import NotificationBell from './NotificationBell'
 
 const navLinks = [
   { label: 'Koleksi', href: '/produk' },
@@ -55,39 +56,39 @@ export default function Navigation() {
               </Link>
             </motion.div>
           ))}
-          {!isAdmin && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-                <Link
-                  href={status === 'authenticated' ? '/cart' : '/account/login'}
-                  onClick={() => setMobileOpen(false)}
-                  className="font-[var(--font-display)] text-3xl text-[var(--color-text-primary)]"
-                >
-                  Cart{totalItems > 0 ? ` (${totalItems})` : ''}
-                </Link>
-            </motion.div>
-          )}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            {status === 'authenticated' ? (
-              <Link href="/account/profile" onClick={() => setMobileOpen(false)} className="font-[var(--font-display)] text-2xl text-[var(--color-text-secondary)]">
-                {session.user.name?.split(' ')[0] || 'Akun'}
-              </Link>
+          {status === 'authenticated' ? (
+            isAdmin ? (
+              <>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <Link href="/admin" onClick={() => setMobileOpen(false)} className="font-[var(--font-display)] text-2xl text-[var(--color-accent)]">
+                    {session.user.name?.split(' ')[0] || 'Admin'}
+                  </Link>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Link href="/" onClick={() => setMobileOpen(false)} className="font-[var(--font-display)] text-2xl text-[var(--color-text-secondary)]">
+                    Lihat Toko
+                  </Link>
+                </motion.div>
+              </>
             ) : (
+              <>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <Link href="/cart" onClick={() => setMobileOpen(false)} className="font-[var(--font-display)] text-3xl text-[var(--color-text-primary)]">
+                    Cart{totalItems > 0 ? ` (${totalItems})` : ''}
+                  </Link>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Link href="/account/profile" onClick={() => setMobileOpen(false)} className="font-[var(--font-display)] text-2xl text-[var(--color-text-secondary)]">
+                    {session.user.name?.split(' ')[0] || 'Akun'}
+                  </Link>
+                </motion.div>
+              </>
+            )
+          ) : (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <Link href="/account/login" onClick={() => setMobileOpen(false)} className="font-[var(--font-display)] text-2xl text-[var(--color-text-secondary)]">
                 Masuk
               </Link>
-            )}
-          </motion.div>
-          {isAdmin && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-              <Link href="/admin" onClick={() => setMobileOpen(false)} className="font-[var(--font-display)] text-2xl text-[var(--color-accent)]">CMS</Link>
             </motion.div>
           )}
         </motion.div>,
@@ -126,30 +127,34 @@ export default function Navigation() {
                 </Link>
               ))}
               {status === 'authenticated' ? (
-                <Link href="/account/profile" className="text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]">
-                  {session.user.name?.split(' ')[0] || 'Akun'}
-                </Link>
+                isAdmin ? (
+                  <Link href="/admin" className="text-sm font-medium text-[var(--color-accent)] transition-colors hover:opacity-70">
+                    {session.user.name?.split(' ')[0] || 'Admin'}
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/account/profile" className="text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]">
+                      {session.user.name?.split(' ')[0] || 'Akun'}
+                    </Link>
+                    <NotificationBell />
+                    <Link
+                      href="/cart"
+                      className="relative text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+                      aria-label="Cart"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                      </svg>
+                      {totalItems > 0 && (
+                        <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[10px] font-medium text-white">{totalItems}</span>
+                      )}
+                    </Link>
+                  </>
+                )
               ) : (
                 <Link href="/account/login" className="text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]">
                   Masuk
                 </Link>
-              )}
-              {!isAdmin && (
-                <Link
-                  href={status === 'authenticated' ? '/cart' : '/account/login'}
-                  className="relative text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-                  aria-label="Cart"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                  </svg>
-                  {totalItems > 0 && (
-                    <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[10px] font-medium text-white">{totalItems}</span>
-                  )}
-                </Link>
-              )}
-              {isAdmin && (
-                <Link href="/admin" className="text-sm font-medium text-[var(--color-accent)] transition-colors hover:opacity-70">CMS</Link>
               )}
             </div>
 

@@ -8,7 +8,7 @@ import { useEffect } from 'react'
 const nav = [
   { label: 'Produk', href: '/admin' },
   { label: 'Pesanan', href: '/admin/pesanan' },
-  { label: 'Live Chat', href: '/admin/chat', badge: '1' },
+  { label: 'Kupon', href: '/admin/kupon' },
   { label: 'Hero', href: '/admin/hero' },
   { label: 'Kelola Staff', href: '/admin/users' },
 ]

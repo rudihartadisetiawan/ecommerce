@@ -51,6 +51,9 @@ function LoginForm() {
             <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition-colors placeholder:text-[var(--color-text-secondary)]/50 focus:border-[var(--color-accent)]" placeholder="••••••••" />
           </div>
+          <div className="flex justify-end">
+            <Link href="/account/forgot-password" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] underline underline-offset-2">Lupa Password?</Link>
+          </div>
           <button type="submit" className="w-full rounded-full bg-[var(--color-text-primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:brightness-125">Masuk</button>
         </form>
       </div>

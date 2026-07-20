@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const mockUsers = [
-  { id: 1, name: 'Owner GAUL', email: 'owner@gaul.com', role: 'super_admin', createdAt: '2026-01-01' },
+  { id: 1, name: 'Rudi', email: 'owner@gaul.com', role: 'super_admin', createdAt: '2026-01-01' },
   { id: 2, name: 'Admin Gudang', email: 'admin@gaul.com', role: 'admin', createdAt: '2026-02-15' },
   { id: 3, name: 'CS Staff Rina', email: 'rina.cs@gaul.com', role: 'admin', createdAt: '2026-03-10' },
   { id: 4, name: 'Budi Santoso', email: 'budi@gmail.com', role: 'customer', createdAt: '2026-05-01' },

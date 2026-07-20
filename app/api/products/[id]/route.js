@@ -19,12 +19,14 @@ const updateSchema = z.object({
   slug: z.string().min(1).optional(),
   description: z.string().optional(),
   price: z.number().int().nonnegative().optional(),
+  costPrice: z.number().int().nonnegative().optional(),
   category: z.string().min(1).optional(),
   sizes: z.array(z.string()).optional(),
   colors: z.array(z.any()).optional(),
   images: z.array(z.string()).optional(),
   stock: z.number().int().nonnegative().optional(),
   isActive: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
 })
 
 export async function PUT(request, { params }) {

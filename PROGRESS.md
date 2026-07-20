@@ -1,7 +1,7 @@
 ---
 project: ecommerce-gaul
-last_session: 2026-07-19
-current_focus: admin-cart-guard-fix
+last_session: 2026-07-20
+current_focus: owner-reporting-features
 ---
 
 # Progress Log
@@ -11,11 +11,11 @@ current_focus: admin-cart-guard-fix
 
 ## Status Ringkas
 | Domain | Status | Progress |
-|---|---|---|---|
+|---|---|---|---|---|
 | Frontend | ✅ Selesai | 100% |
 | Backend | ✅ Selesai | 100% |
 | Security | ✅ Selesai (audit + 14 temuan fixed) | 100% |
-| E2E Tests | ✅ 14 tests passing (auth, shop, admin) | 100% |
+| E2E Tests | ✅ 18 tests passing (auth, shop, admin, payment) | 100% |
 | Definition of Done | ✅ Semua kriteria PRD terpenuhi | ✅ |
 
 ---
@@ -568,4 +568,164 @@ Semua item dari PRD.md section 8 terpenuhi:
 | 3 | Frontend responsif penuh di mobile & desktop | ✅ Build OK, mobile-first implementation |
 | 4 | Semua interaksi/animasi terimplementasi (scroll storytelling, hover, micro-interaction, page transition, scroll reveal) | ✅ GSAP + Framer Motion |
 | 5 | Security review tidak menemukan temuan kritis | ✅ 14 temuan fixed (0 critical, 0 high) |
-| 6 | Flow cart→checkout diuji otomatis via Playwright | ✅ 14 E2E tests passing |
+| 6 | Flow cart→checkout diuji otomatis via Playwright | ✅ 18 E2E tests passing |
+
+---
+
+## Gap Analysis & Fixes — sesi 2026-07-20
+
+### Latar Belakang
+Berdasarkan analisis kode, ditemukan beberapa kesenjangan antara implementasi dan spesifikasi PRD. Semua diperbaiki dalam sesi ini.
+
+### P0 Fixes
+
+| # | Item | Perubahan |
+|---|---|---|
+| 1 | **Midtrans CSP hardcode sandbox** | `next.config.js` — CSP domains jadi kondisional berdasarkan `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION`. Production: `app.midtrans.com`, `api.midtrans.com`, `snap-assets.midtrans.com`. Sandbox tetap seperti sebelumnya. |
+| 2 | **Custom 404 page** | `app/not-found.js` — halaman baru dengan brand GAUL: heading "Halaman Tidak Ditemukan", 2 CTAs (Kembali ke Beranda, Lihat Koleksi), inline styling tanpa dependensi komponen. |
+| 3 | **Error Boundary** | `app/error.js` — client component error boundary dengan tombol "Coba Lagi" (reset) + "Kembali ke Beranda". Console.error logging. |
+| 4 | **Notification System** | Model `Notification` sudah ada di schema tapi tidak terpakai. Implementasi: |
+| | — API | `app/api/notifications/route.js` — GET (ambil 20 notifikasi terbaru, rate-limited) + POST (admin only, validasi type/title/message). |
+| | — Trigger produk | `app/api/products/route.js` — auto-create notifikasi `new_collection` saat admin POST produk baru. |
+| | — Trigger hero | `app/api/hero/route.js` — auto-create notifikasi `promo` saat admin POST hero dengan subtitle/cta. |
+| | — UI Bell | `components/shop/NotificationBell.js` — floating dropdown di Navigation, badge unread count, tampilkan 5 notifikasi terbaru. |
+| | — Halaman Notifikasi | `app/account/notifications/page.js` — daftar semua notifikasi, filter type badge, tanggal lengkap. |
+| | — Nav link | `components/shop/AccountNav.js` — tambah link "Notifikasi" dengan icon bell. |
+| | — Navigation | `components/shop/Navigation.js` — tambah `NotificationBell` di desktop nav. |
+
+### P1 Fixes
+
+| # | Item | Perubahan |
+|---|---|---|
+| 5 | **`.env.example` update** | Tambah `RAJAONGKIR_API_KEY` dan `RAJAONGKIR_ORIGIN_CITY_ID` dengan dokumentasi singkat. |
+| 6 | **Loading skeletons** | `components/ui/Skeleton.js` — 3 komponen: `Skeleton` (generic), `ProductCardSkeleton`, `ProductGridSkeleton` (grid 4 kolom). |
+| | — Homepage | `app/(shop)/page.js` — loading state + `ProductGridSkeleton` 8 item saat fetch produk. |
+| | — Katalog | `app/(shop)/produk/page.js` — loading state + `ProductGridSkeleton` 8 item. |
+| | — Detail produk | `app/(shop)/produk/[slug]/page.js` — skeleton layout (breadcrumb, gallery, info, size/color, CTA button) selama loading. |
+| 7 | **SEO metadata dinamis** | `app/(shop)/produk/[slug]/page.js` — `useEffect` set `document.title` berdasarkan nama produk. |
+| 8 | **Newsletter subscribe** | `components/shop/Footer.js` — section newsletter baru di atas footer: input email + tombol Daftar, simpan ke localStorage, feedback sukses/gagal. |
+| 9 | **Admin dashboard charts** | `app/admin/page.js` — 3 chart CSS-only: bar chart penjualan bulanan (6 bulan), donut status pesanan (conic-gradient), top 5 produk terlaris. |
+| 10 | **E2E payment flow** | `e2e/payment-flow.spec.js` — 4 test baru: add-to-cart→cart, checkout flow (form→shipping→payment→bayar), empty cart redirect, guest redirect. |
+
+### Build & Test
+| Metrik | Hasil |
+|---|---|
+| Routes | ✅ 36 routes, 0 error |
+| E2E Tests | ✅ **18/18 passing** (4 auth + 4 admin + 6 shop + 4 payment) |
+
+### Keputusan penting
+- Notification trigger otomatis saat admin POST produk/hero — tidak perlu manual dari CMS
+- CSS-only charts (conic-gradient, div heights) — tanpa library chart tambahan
+- Newsletter disimpan di localStorage — upgrade ke API endpoint jika perlu persist lintas device
+- RajaOngkir API key wajib diisi — tanpa key, shipping cost tidak akan work
+
+### Status final
+✅ Semua kesenjangan dari analisis telah diperbaiki.
+✅ Project siap untuk production deployment.
+
+---
+
+## Dokumentasi Sync — sesi 2026-07-20
+
+### Latar belakang
+Kode project memiliki banyak fitur di luar PRD.md original (live chat, role super_admin, tracking/resi, RajaOngkir, dll) yang ditambahkan lewat sesi-sesi sebelumnya. PRD.md dan AGENTS.md tidak sinkron dengan kondisi kode aktual.
+
+### Perubahan
+
+**PRD.md:**
+- Section 1-2: tambah status banner, tambah target user role admin
+- Section 3: restruktur total — P0/P1/P2 diisi dengan fitur aktual (live chat, multi-tier role, tracking, notifikasi, charts, skeletons, dll). Tambah sub-section "Fitur tambahan di luar PRD asli" (QRIS, RajaOngkir, admin guard, rate limiting, dll)
+- Section 4: tambah Zod, bcryptjs, SSE, RajaOngkir, Playwright; update versi library aktual; tambah daftar dependencies lengkap
+- Section 5: rewrite total — 3 enum + 9 model sesuai `schema.prisma` (Role super_admin, ChatMessage, snapToken/trackingNumber/receivedProofImage di Order, dll)
+- Section 7: update batasan aktual (cart localStorage, shipping cost belum terintegrasi, in-memory event bus, dll)
+- Section 8: update DoD — semua ✅, tambah 4 kriteria baru (multi-tier role, live chat, tracking, error handling)
+
+**AGENTS.md:**
+- Header: tambah status banner ✅ SEMUA DOMAIN SELESAI
+- Ringkasan: tambah daftar fitur di luar PRD asli
+- Tech Stack: detail versi (Next v16, React v19, Prisma v6, Tailwind v4, dll), tambah baris Real-time SSE, Shipping RajaOngkir, Validasi Zod, Password bcryptjs, E2E Playwright
+- Struktur Folder: rewrite total — mirror folder tree aktual (19 halaman, 24 API routes, 15 komponen, 10 lib, 9 prisma models, 6 migrations, 7 public SVG, 4 e2e spec files)
+- Kontrak Data: tambah catatan perbedaan dari PRD asli (ChatMessage, snapToken, trackingNumber, super_admin)
+- Aturan Per-Domain: tiap domain tambah status ✅ saat ini
+- E2E Testing: sub-section baru (aturan + status)
+- Larangan: tambah 2 aturan (super_admin hanya untuk owner, admin jangan akses cart/checkout)
+
+### Build & Test
+Tidak ada perubahan kode — hanya dokumentasi.
+
+### Status final
+✅ PRD.md dan AGENTS.md sekarang sinkron dengan kondisi kode aktual.
+✅ Semua fitur tambahan (live chat, super_admin, tracking, dll) tercatat di kedua dokumen.
+
+---
+
+## Sesi Besar: Improvement All-in — 2026-07-20
+
+### Ringkasan Implementasi
+
+| Fitur | Status | Detail |
+|-------|--------|--------|
+| **🔐 Lupa Password** | ✅ | Model `PasswordReset` + migration + 2 API + 2 halaman + link di login + integrasi email Resend |
+| **📦 Stok per Varian** | ✅ | Field `stockPerVariant` + migration + grid input size×color di add/edit + validasi & decrement di order |
+| **🎫 Kupon Diskon** | ✅ | Model `Coupon` + migration + API CRUD + `/admin/kupon` + validasi di checkout + integrasi total order |
+| **👤 Guest Checkout** | ✅ | Checkout tanpa login (isi email), order tanpa userId, Midtrans guest-aware, rate limit per IP |
+| **📊 Export CSV** | ✅ | `GET /api/orders/export` + tombol di admin pesanan |
+| **🔍 Search Autocomplete** | ✅ | Dropdown saran produk + thumbnail + harga di SearchBar |
+| **👁 Recently Viewed** | ✅ | localStorage + section "Baru Dilihat" di katalog |
+| **📄 Pagination + Load More** | ✅ | API `?page=&limit=` + tombol "Muat Lainnya" di katalog |
+| **🔎 Image Zoom** | ✅ | `ImageMagnifier` — zoom follow mouse di detail produk (desktop) |
+| **🔔 Toast Provider** | ✅ | Komponen notifikasi global |
+| **💾 Backup DB** | ✅ | Script `scripts/backup-db.ps1` |
+| **🏷 Featured Produk** | ✅ | Field `isFeatured` + migration + toggle di form + homepage fallback |
+| **🔗 Notifikasi Clickable** | ✅ | Field `link` di Notification + migration + navigasi ke produk spesifik |
+| **🐛 Bugfix: Rudi name** | ✅ | Update DB + seed + mock data dari "Owner GAUL" ke "Rudi" |
+| **🐛 Bugfix: API format** | ✅ | Homepage, detail, admin page, HeroSection, ChatWidget — handle `{products}` / array |
+| **🐛 Bugfix: hooks error** | ✅ | `ChatWidgetWrapper` — pisah early return ke komponen 1-hook |
+| **🐛 Bugfix: Hero image** | ✅ | HeroSection — API response format `{products}` |
+
+### Routes: 44 (dari 36)
+### Build: ✅ 0 error
+
+---
+
+## Owner Reporting Features — sesi 2026-07-20
+
+### Latar belakang
+Dari analisis gap bisnis, owner (super_admin) butuh visibility ke **laba** (bukan cuma omset), **warning stok menipis**, dan **data pelanggan** — bukan cuma pesanan.
+
+### Implementasi
+
+| # | Fitur | Perubahan |
+|---|---|---|
+| 1 | **Field `costPrice` (harga modal)** | `prisma/schema.prisma` — tambah `costPrice Int @default(0)` ke Product. Migration `add_cost_price`. |
+| 2 | **API Products — dukung costPrice** | `app/api/products/route.js` — Zod schema tambah `costPrice`. `app/api/products/[id]/route.js` — updateSchema tambah `costPrice`. |
+| 3 | **Serialize — expose costPrice** | `lib/serialize.js` — `costPrice: p.costPrice ?? 0` |
+| 4 | **Form Tambah Produk** | `app/admin/produk/add/page.js` — grid 4 kolom + field "Harga Modal" + kirim `costPrice` via POST |
+| 5 | **Form Edit Produk** | `app/admin/produk/[id]/edit/page.js` — load & simpan `costPrice` |
+| 6 | **Seed — costPrice otomatis** | `prisma/seed.js` — tiap produk dapat `costPrice = ~55% harga jual`, di-upsert ke existing |
+| 7 | **Dashboard — Analisis Keuangan (super_admin only)** | `app/admin/page.js` — 4 kartu: Total Revenue, Total Modal, Laba Kotor, Margin Laba. Dihitung dari costPrice produk × qty terjual. |
+| 8 | **Dashboard — Low Stock Alert** | `app/admin/page.js` — peringatan stok kritis (≤5): jumlah produk habis + 6 produk stok menipis, link cepat ke edit. Warna merah untuk stok ≤2. |
+| 9 | **Dashboard — Top Pelanggan** | `app/admin/page.js` — top 5 pelanggan berdasarkan jumlah pesanan, dengan total belanja. |
+| 10 | **Dashboard — Kolom Modal & Margin di Tabel Produk (super_admin only)** | `app/admin/page.js` — tambah kolom "Modal" (harga modal) + "Margin" (persentase laba) dengan badge warna (hijau ≥40%, kuning ≥20%, merah <20%). |
+
+### File berubah
+| File | Perubahan |
+|---|---|
+| `prisma/schema.prisma` | +`costPrice Int @default(0)` |
+| `prisma/migrations/20260720100050_add_cost_price/` | Migration baru |
+| `prisma/seed.js` | Hitung costPrice otomatis, upsert ke existing |
+| `lib/serialize.js` | +`costPrice` di serializeProduct |
+| `app/api/products/route.js` | +`costPrice` di Zod schema POST |
+| `app/api/products/[id]/route.js` | +`costPrice` di Zod schema PUT |
+| `app/admin/page.js` | +finance report, low stock alert, top customers, margin kolom |
+| `app/admin/produk/add/page.js` | +field Harga Modal |
+| `app/admin/produk/[id]/edit/page.js` | +field Harga Modal |
+
+### Build
+✅ 44 routes, 0 error
+
+### Status final
+✅ Owner sekarang bisa lihat **laba & margin** langsung di dashboard.
+✅ Owner dapat **peringatan stok menipis** sebelum kehabisan.
+✅ Owner lihat **top pelanggan** untuk strategi retensi.
+✅ Form produk support **harga modal** — data existing sudah diisi estimasi via seed.

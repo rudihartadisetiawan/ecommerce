@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import ImageUpload from '@/components/ui/ImageUpload'
 
 export default function AdminHeroPage() {
   const [heroItems, setHeroItems] = useState([])
@@ -138,18 +139,8 @@ export default function AdminHeroPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Image URL</label>
-                <input value={item.imageUrl} onChange={e => updateItem(item.id, 'imageUrl', e.target.value)} className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
+                <ImageUpload value={item.imageUrl} onChange={(url) => updateItem(item.id, 'imageUrl', url)} label="Gambar Banner" />
               </div>
-
-              {item.imageUrl && (
-                <div className="sm:col-span-2 mt-2">
-                  <span className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Preview Gambar</span>
-                  <div className="relative h-40 w-full overflow-hidden rounded-xl bg-[var(--color-bg-section)] border border-[var(--color-bg-section)]">
-                    <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
-                  </div>
-                </div>
-              )}
 
               <div className="sm:col-span-2 mt-2 flex justify-end">
                 <button 

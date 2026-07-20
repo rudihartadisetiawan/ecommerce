@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ImageUpload from '@/components/ui/ImageUpload'
 
 export default function AddProductPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', price: '', category: 'Atasan', stock: '', description: '' })
+  const [form, setForm] = useState({ name: '', price: '', costPrice: '', category: 'Atasan', stock: '', description: '', isFeatured: false })
   const [sizes, setSizes] = useState([])
   const [colors, setColors] = useState([])
   const [colorName, setColorName] = useState('')
   const [colorHex, setColorHex] = useState('#CCCCCC')
-  const [images, setImages] = useState('')
+  const [images, setImages] = useState([])
+  const [variantStock, setVariantStock] = useState({})
   const [error, setError] = useState('')
 
   const toggleSize = (s) => setSizes(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s])
@@ -27,9 +29,31 @@ export default function AddProductPage() {
 
   const removeColor = (name) => setColors(p => p.filter(c => c.name !== name))
 
+  const updateVariantStock = (size, colorName, val) => {
+    const key = `${size}-${colorName}`
+    setVariantStock(p => ({ ...p, [key]: Math.max(0, Number(val) || 0) }))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    // Hitung stockPerVariant dari input varian (jika ada sizes + colors)
+    const hasVariants = sizes.length > 0 && colors.length > 0
+    let stockPerVariant = null
+    let totalStock = Number(form.stock) || 0
+    if (hasVariants) {
+      stockPerVariant = {}
+      for (const s of sizes) {
+        for (const c of colors) {
+          const key = `${s}-${c.name}`
+          const val = Number(variantStock[key]) || 0
+          stockPerVariant[key] = val
+        }
+      }
+      totalStock = Object.values(stockPerVariant).reduce((a, b) => a + b, 0)
+    }
+
     const res = await fetch('/api/products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -38,11 +62,14 @@ export default function AddProductPage() {
         slug: form.name.toLowerCase().replace(/\s+/g, '-'),
         description: form.description,
         price: Number(form.price),
+        costPrice: Number(form.costPrice) || 0,
         category: form.category,
         sizes,
         colors: colors.length ? colors : [{ name: 'Default', hex: '#CCCCCC' }],
-        images: images ? images.split(',').map(s => s.trim()) : [`https://picsum.photos/seed/${form.name.toLowerCase().replace(/\s+/g, '-')}/800/1000`],
-        stock: Number(form.stock),
+        images: images.length ? images : [`https://picsum.photos/seed/${form.name.toLowerCase().replace(/\s+/g, '-')}/800/1000`],
+        stock: totalStock,
+        stockPerVariant,
+        isFeatured: form.isFeatured,
       }),
     })
     if (!res.ok) { setError('Gagal menambah produk'); return }
@@ -61,10 +88,14 @@ export default function AddProductPage() {
           <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Nama Produk</label>
           <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Harga</label>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Harga Jual</label>
             <input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} required className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Harga Modal</label>
+            <input type="number" value={form.costPrice} onChange={e => setForm(p => ({ ...p, costPrice: e.target.value }))} className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
           </div>
           <div>
             <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Kategori</label>
@@ -73,8 +104,8 @@ export default function AddProductPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Stok</label>
-            <input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} required className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Stok Total</label>
+            <input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" placeholder="Otomatis dari varian jika dikosongkan" />
           </div>
         </div>
         <div>
@@ -102,13 +133,63 @@ export default function AddProductPage() {
             ))}
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Image URLs (koma untuk multiple)</label>
-          <input value={images} onChange={e => setImages(e.target.value)} className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" placeholder="https://..." />
-        </div>
+        {sizes.length > 0 && colors.length > 0 && (
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-2">Stok per Varian</label>
+            <div className="overflow-x-auto rounded-xl border border-[var(--color-bg-section)]">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-[var(--color-bg-section)]/50">
+                    <th className="px-3 py-2 text-left font-medium text-[var(--color-text-secondary)]">Size \ Warna</th>
+                    {colors.map(c => (
+                      <th key={c.name} className="px-3 py-2 text-center font-medium text-[var(--color-text-secondary)]">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.hex }} /> {c.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sizes.map(s => (
+                    <tr key={s} className="border-t border-[var(--color-bg-section)]">
+                      <td className="px-3 py-2 font-semibold text-[var(--color-text-primary)]">{s}</td>
+                      {colors.map(c => {
+                        const key = `${s}-${c.name}`
+                        return (
+                          <td key={c.name} className="px-2 py-1.5">
+                            <input
+                              type="number"
+                              min="0"
+                              value={variantStock[key] ?? ''}
+                              onChange={e => updateVariantStock(s, c.name, e.target.value)}
+                              className="w-full rounded-lg border border-[var(--color-text-secondary)]/20 bg-transparent px-2 py-1.5 text-center text-xs text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
+                              placeholder="0"
+                            />
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-1 text-[10px] text-[var(--color-text-secondary)]">
+              Total stok varian: {Object.values(variantStock).reduce((a, b) => a + (Number(b) || 0), 0)}
+            </p>
+          </div>
+        )}
+        <ImageUpload multiple value={images} onChange={setImages} label="Gambar Produk" />
         <div>
           <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Deskripsi</label>
           <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">Featured di Homepage</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">Tampilkan di Koleksi Terbaru</p>
+          </div>
+          <button type="button" onClick={() => setForm(p => ({ ...p, isFeatured: !p.isFeatured }))} className={`relative h-6 w-11 rounded-full transition-colors ${form.isFeatured ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-text-secondary)]/30'}`}>
+            <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${form.isFeatured ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
         </div>
         <button type="submit" className="rounded-full bg-[var(--color-text-primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:brightness-125">Simpan</button>
       </form>

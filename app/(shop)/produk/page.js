@@ -8,6 +8,8 @@ import SearchBar from '../../../components/shop/SearchBar'
 import FilterSidebar from '../../../components/shop/FilterSidebar'
 import Container from '../../../components/ui/Container'
 import Footer from '../../../components/shop/Footer'
+import { ProductGridSkeleton } from '../../../components/ui/Skeleton'
+import { getRecentlyViewed } from '@/lib/recently-viewed'
 
 const containerVariants = {
   hidden: {},
@@ -25,9 +27,51 @@ export default function CatalogPage() {
   const [sortBy, setSortBy] = useState('newest')
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [recentlyViewed, setRecentlyViewed] = useState([])
 
+  useEffect(() => { setRecentlyViewed(getRecentlyViewed()) }, [])
+
+  const fetchProducts = async (pageNum, append = false) => {
+    const params = new URLSearchParams({ page: pageNum, limit: '12' })
+    if (searchQuery) params.set('q', searchQuery)
+    if (filters.categories.length === 1) params.set('category', filters.categories[0])
+    if (sortBy !== 'newest') params.set('sort', sortBy)
+
+    if (!append) setLoading(true)
+    else setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/products?${params}`)
+      const data = await res.json()
+      if (data.products) {
+        setProducts(prev => append ? [...prev, ...data.products] : data.products)
+        setTotal(data.total)
+        setTotalPages(data.totalPages)
+      }
+    } catch {}
+    setLoading(false)
+    setLoadingMore(false)
+  }
+
+  // Fetch when filters change (reset to page 1)
   useEffect(() => {
-    fetch('/api/products').then(r => r.json()).then(setProducts).catch(() => {})
+    setPage(1)
+    fetchProducts(1, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, filters.categories.join(','), sortBy])
+
+  const loadMore = () => {
+    const next = page + 1
+    setPage(next)
+    fetchProducts(next, true)
+  }
+
+  // Baca filter kategori dari URL
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const cat = params.get('cat')
     if (cat) setFilters(f => ({ ...f, categories: [cat] }))
@@ -35,32 +79,22 @@ export default function CatalogPage() {
 
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products])
 
+  // Client-side filter untuk loaded products (search, size, price)
   const filtered = useMemo(() => {
     let result = [...products]
-
+    // Client side search — search via API sudah jalan, ini tambahan untuk hasil loaded
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       result = result.filter((p) => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
     }
-
-    if (filters.categories.length > 0) {
-      result = result.filter((p) => filters.categories.includes(p.category))
-    }
-
     if (filters.sizes.length > 0) {
       result = result.filter((p) => (p.sizes || []).some((s) => filters.sizes.includes(s)))
     }
-
     if (filters.priceRange) {
       result = result.filter((p) => p.price >= filters.priceRange.min && p.price <= filters.priceRange.max)
     }
-
-    if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price)
-    else if (sortBy === 'price-desc') result.sort((a, b) => b.price - a.price)
-    else result.sort((a, b) => b.id - a.id)
-
     return result
-  }, [searchQuery, filters, sortBy, products])
+  }, [searchQuery, filters, products])
 
   const handleReset = () => setFilters({ categories: [], sizes: [], priceRange: null })
 
@@ -119,9 +153,13 @@ export default function CatalogPage() {
                   <p className="text-sm text-[var(--color-text-secondary)]">Tidak ada produk yang cocok dengan filter kamu.</p>
                   <button onClick={handleReset} className="mt-4 text-xs font-medium text-[var(--color-accent)] underline underline-offset-4">Reset Filter</button>
                 </div>
+              ) : loading ? (
+                <ProductGridSkeleton count={8} />
               ) : (
                 <>
-                  <p className="mb-6 text-xs text-[var(--color-text-secondary)]">{filtered.length} produk ditemukan</p>
+                  <p className="mb-6 text-xs text-[var(--color-text-secondary)]">
+                    Menampilkan {filtered.length} dari {total} produk
+                  </p>
                   <motion.div
                     variants={containerVariants}
                     initial="hidden"
@@ -134,12 +172,36 @@ export default function CatalogPage() {
                       </motion.div>
                     ))}
                   </motion.div>
+                  {page < totalPages && (
+                    <div className="mt-10 text-center">
+                      <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="rounded-full border border-[var(--color-text-primary)]/20 bg-white px-8 py-3 text-xs font-medium text-[var(--color-text-primary)] transition-all hover:bg-[var(--color-text-primary)] hover:text-white disabled:opacity-50"
+                      >
+                        {loadingMore ? 'Memuat…' : `Muat Lainnya (${total - page * 12 > 0 ? Math.min(12, total - page * 12) : 0})`}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
           </div>
         </Container>
       </main>
+
+      {recentlyViewed.length > 0 && (
+        <section className="border-t border-[var(--color-bg-section)] py-12">
+          <Container>
+            <h2 className="mb-6 font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">Baru Dilihat</h2>
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
+              {recentlyViewed.map(p => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </Container>
+        </section>
+      )}
 
       <Footer />
     </>

@@ -2,10 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 
 export default function SearchBar({ value, onChange }) {
   const [local, setLocal] = useState(value || '')
+  const [suggestions, setSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const timer = useRef(null)
+  const inputRef = useRef(null)
 
   useEffect(() => { setLocal(value || '') }, [value])
 
@@ -13,12 +17,26 @@ export default function SearchBar({ value, onChange }) {
     const v = e.target.value
     setLocal(v)
     clearTimeout(timer.current)
-    timer.current = setTimeout(() => onChange(v), 300)
+    timer.current = setTimeout(() => {
+      onChange(v)
+      if (v.trim().length >= 2) {
+        fetch(`/api/products?q=${encodeURIComponent(v.trim())}&limit=5`)
+          .then(r => r.json())
+          .then(data => { setSuggestions(Array.isArray(data) ? data.slice(0, 5) : []); setShowSuggestions(true) })
+          .catch(() => {})
+      } else {
+        setSuggestions([])
+        setShowSuggestions(false)
+      }
+    }, 300)
   }
 
   const handleClear = () => {
     setLocal('')
     onChange('')
+    setSuggestions([])
+    setShowSuggestions(false)
+    inputRef.current?.focus()
   }
 
   return (
@@ -27,9 +45,12 @@ export default function SearchBar({ value, onChange }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
       </svg>
       <input
+        ref={inputRef}
         type="text"
         value={local}
         onChange={handleChange}
+        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         placeholder="Cari produk..."
         className="w-full border-b border-[var(--color-text-secondary)]/20 bg-transparent py-3 pl-7 pr-8 text-sm text-[var(--color-text-primary)] outline-none transition-colors placeholder:text-[var(--color-text-secondary)]/50 focus:border-[var(--color-accent)]"
       />
@@ -47,6 +68,39 @@ export default function SearchBar({ value, onChange }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
           </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSuggestions && suggestions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] shadow-xl"
+          >
+            {suggestions.map(p => {
+              const img = Array.isArray(p.images) ? p.images[0] : p.image
+              return (
+                <Link
+                  key={p.id}
+                  href={`/produk/${p.slug}`}
+                  className="flex items-center gap-3 px-4 py-3 text-xs transition-colors hover:bg-[var(--color-bg-section)]"
+                >
+                  {img && (
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-section)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt={p.name} className="h-full w-full object-cover" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-[var(--color-text-primary)]">{p.name}</p>
+                    <p className="text-[var(--color-text-secondary)]">Rp{p.price?.toLocaleString('id-ID')}</p>
+                  </div>
+                </Link>
+              )
+            })}
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

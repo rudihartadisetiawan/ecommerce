@@ -32,3 +32,6 @@ e2e-debug-*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploads (user-uploaded files — jangan di-commit)
+/public/uploads/

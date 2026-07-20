@@ -12,6 +12,7 @@ import ProductCard from '../../components/shop/ProductCard'
 import Footer from '../../components/shop/Footer'
 import Container from '../../components/ui/Container'
 import Button from '../../components/ui/Button'
+import { ProductGridSkeleton } from '../../components/ui/Skeleton'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -45,16 +46,35 @@ const categories = [
 
 export default function ShopPage() {
   const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
   const koleksiRef = useScrollReveal()
   const categoryRef = useScrollReveal()
   const marqueeRef = useRef(null)
   const tentangRef = useScrollReveal()
 
   useEffect(() => {
-    fetch('/api/products')
+    // Coba ambil produk featured dulu — fallback ke produk terbaru kalau kosong
+    fetch('/api/products?featured=true&limit=8')
       .then(r => r.json())
-      .then(d => setProducts(d))
-      .catch(() => {})
+      .then(d => {
+        const featured = Array.isArray(d) ? d : (d.products || [])
+        if (featured.length >= 4) {
+          setProducts(featured)
+          setLoading(false)
+        } else {
+          // Fallback ke produk terbaru
+          fetch('/api/products?limit=8')
+            .then(r2 => r2.json())
+            .then(d2 => { setProducts(Array.isArray(d2) ? d2 : (d2.products || [])); setLoading(false) })
+            .catch(() => setLoading(false))
+        }
+      })
+      .catch(() => {
+        fetch('/api/products?limit=8')
+          .then(r2 => r2.json())
+          .then(d2 => { setProducts(Array.isArray(d2) ? d2 : (d2.products || [])); setLoading(false) })
+          .catch(() => setLoading(false))
+      })
   }, [])
 
   // Marquee infinite scroll
@@ -115,11 +135,15 @@ export default function ShopPage() {
             </div>
 
             {/* Uniform premium product grid */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-8">
-              {products.slice(0, 8).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {loading ? (
+              <ProductGridSkeleton count={8} />
+            ) : (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-8">
+                {products.slice(0, 8).map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
 
             {/* Mobile: see all link */}
             <div className="mt-8 text-center sm:hidden">
