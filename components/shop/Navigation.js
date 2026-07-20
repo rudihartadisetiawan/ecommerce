@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import Container from '../ui/Container'
 import { useCart } from '@/lib/cart-context'
 import NotificationBell from './NotificationBell'
@@ -69,6 +69,11 @@ export default function Navigation() {
                     Lihat Toko
                   </Link>
                 </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+                  <button onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }) }} className="font-[var(--font-display)] text-lg text-red-400">
+                    Keluar
+                  </button>
+                </motion.div>
               </>
             ) : (
               <>
@@ -128,9 +133,14 @@ export default function Navigation() {
               ))}
               {status === 'authenticated' ? (
                 isAdmin ? (
-                  <Link href="/admin" className="text-sm font-medium text-[var(--color-accent)] transition-colors hover:opacity-70">
-                    {session.user.name?.split(' ')[0] || 'Admin'}
-                  </Link>
+                  <>
+                    <Link href="/admin" className="text-sm font-medium text-[var(--color-accent)] transition-colors hover:opacity-70">
+                      {session.user.name?.split(' ')[0] || 'Admin'}
+                    </Link>
+                    <button onClick={() => signOut({ callbackUrl: '/' })} className="text-xs font-medium text-red-400 transition-colors hover:text-red-500">
+                      Keluar
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link href="/account/profile" className="text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]">

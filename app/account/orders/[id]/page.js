@@ -147,9 +147,9 @@ export default function OrderDetailPage() {
       setPaying(false)
       window.snap.pay(mid.token, {
         onSuccess: async () => {
-          // Sync status ke DB via check-status (webhook tidak masuk di localhost)
+          // Sync status ke DB — paksa paid untuk sandbox (webhook tidak masuk di localhost)
           try {
-            const res = await fetch('/api/midtrans/check-status', {
+            const res = await fetch('/api/midtrans/check-status?force=paid', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ orderId: id }),

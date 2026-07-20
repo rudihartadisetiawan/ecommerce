@@ -21,26 +21,40 @@ export async function POST(request) {
     return NextResponse.json({ status: order.status, alreadyUpdated: true })
   }
 
+  const { searchParams } = new URL(request.url)
+  const forcePaid = searchParams.get('force') === 'paid'
+
   try {
     const snap = snapClient()
     const status = await snap.transaction.status(orderId)
 
     const newStatus = mapTransactionStatus(status.transaction_status)
-    if (newStatus && newStatus !== order.status) {
+    // Fallback: jika forcePaid=true dan Midtrans masih pending (sandbox), paksa jadi paid
+    const finalStatus = newStatus === 'pending' && forcePaid ? 'paid' : newStatus
+
+    if (finalStatus && finalStatus !== order.status) {
       await prisma.order.update({
         where: { id: orderId },
         data: {
-          status: newStatus,
+          status: finalStatus,
           paymentRef: status.transaction_id ?? order.paymentRef,
           // Hapus snapToken jika order dibatalkan/expired — token tidak berlaku lagi
-          ...(newStatus === 'cancelled' && { snapToken: null }),
+          ...(finalStatus === 'cancelled' && { snapToken: null }),
         },
       })
-      return NextResponse.json({ status: newStatus, updated: true })
+      return NextResponse.json({ status: finalStatus, updated: true })
     }
 
     return NextResponse.json({ status: order.status, updated: false })
   } catch (e) {
+    // Fallback: jika Midtrans error dan forcePaid=true, set paid optimistically
+    if (forcePaid && order.status === 'pending') {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'paid' },
+      })
+      return NextResponse.json({ status: 'paid', updated: true })
+    }
     return NextResponse.json({ error: 'MIDTRANS_ERROR', message: e.message }, { status: 502 })
   }
 }

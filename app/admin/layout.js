@@ -2,15 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useEffect } from 'react'
 
 const nav = [
   { label: 'Produk', href: '/admin' },
   { label: 'Pesanan', href: '/admin/pesanan' },
+  { label: 'Chat', href: '/admin/chat' },
   { label: 'Kupon', href: '/admin/kupon' },
   { label: 'Hero', href: '/admin/hero' },
-  { label: 'Kelola Staff', href: '/admin/users' },
+  { label: 'Staff', href: '/admin/users' },
 ]
 
 export default function AdminLayout({ children }) {
@@ -55,7 +56,15 @@ export default function AdminLayout({ children }) {
               ))}
             </nav>
           </div>
-          <Link href="/" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">← Lihat Toko</Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">← Lihat Toko</Link>
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="rounded-full border border-red-200 px-3 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-red-300"
+            >
+              Keluar
+            </button>
+          </div>
         </div>
       </header>
       <main className="pt-14">{children}</main>

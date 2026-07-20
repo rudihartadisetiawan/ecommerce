@@ -27,7 +27,7 @@ export async function POST(request) {
   if (!admin) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
 
   const body = await request.json()
-  const { type, title, message } = body
+  const { type, title, message, link } = body
 
   if (!type || !title || !message) {
     return NextResponse.json({ error: 'type, title, message wajib' }, { status: 400 })
@@ -37,9 +37,10 @@ export async function POST(request) {
   }
   if (title.length > 200) return NextResponse.json({ error: 'title max 200 char' }, { status: 400 })
   if (message.length > 2000) return NextResponse.json({ error: 'message max 2000 char' }, { status: 400 })
+  if (link && link.length > 200) return NextResponse.json({ error: 'link max 200 char' }, { status: 400 })
 
   const notif = await prisma.notification.create({
-    data: { type, title, message },
+    data: { type, title, message, link: link || undefined },
   })
 
   return NextResponse.json(notif, { status: 201 })

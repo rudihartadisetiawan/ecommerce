@@ -159,11 +159,22 @@ function ProductMessageCard({ product }) {
 export default function AdminChatPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  // ponytail: chat CS tidak tersedia untuk admin/super_admin
-  if (status === 'authenticated' && (session?.user?.role === 'admin' || session?.user?.role === 'super_admin')) {
-    router.push('/admin')
-    return null
-  }
+
+  // Guard: redirect non-admin via useEffect — semua hooks HARUS tetap dipanggil
+  // (Rules of Hooks: jangan ada early return di tengah)
+  const [guardOk, setGuardOk] = useState(false)
+  useEffect(() => {
+    if (status === 'authenticated') {
+      if (session?.user?.role === 'admin' || session?.user?.role === 'super_admin') {
+        setGuardOk(true)
+      } else {
+        router.push('/')
+      }
+    } else if (status === 'unauthenticated') {
+      router.push('/account/login')
+    }
+  }, [status, session, router])
+
   const [conversations, setConversations] = useState([])
   const [messagesByConv, setMessagesByConv] = useState({})
   const [activeId, setActiveId] = useState(null)
@@ -318,6 +329,9 @@ export default function AdminChatPage() {
     c.userName.toLowerCase().includes(search.toLowerCase()) ||
     c.lastMessage.toLowerCase().includes(search.toLowerCase())
   )
+
+  // Jangan render apa-apa sampai guard selesai
+  if (!guardOk) return <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"><p className="text-sm text-[var(--color-text-secondary)]">Memuat...</p></div>
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

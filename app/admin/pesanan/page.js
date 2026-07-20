@@ -21,11 +21,41 @@ const statusLabels = {
   cancelled: 'Dibatalkan',
 }
 
+// Toast mini — notifikasi gaya baru
+function Toast({ message, type, onClose }) {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' }
+  const colors = {
+    success: 'border-l-emerald-400 bg-emerald-50/80',
+    error: 'border-l-red-400 bg-red-50/80',
+    info: 'border-l-blue-400 bg-blue-50/80',
+    warning: 'border-l-amber-400 bg-amber-50/80',
+  }
+  useEffect(() => { const t = setTimeout(onClose, 4000); return () => clearTimeout(t) }, [onClose])
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 60, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 60, scale: 0.95 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      className={`pointer-events-auto flex items-center gap-2.5 border-l-4 ${colors[type] || colors.info} rounded-xl bg-white px-4 py-3 shadow-lg border border-[var(--color-bg-section)]`}
+    >
+      <span className="text-base">{icons[type] || icons.info}</span>
+      <p className="flex-1 text-xs font-medium text-[var(--color-text-primary)]">{message}</p>
+      <button onClick={onClose} className="text-[var(--color-text-secondary)]/30 hover:text-[var(--color-text-secondary)] transition-colors">
+        <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </motion.div>
+  )
+}
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([])
   const [printOrder, setPrintOrder] = useState(null)
-  const [filterTab, setFilterTab] = useState('active') // 'all' | 'active' | 'pending' | 'processing' | 'shipped' | 'archive'
+  const [filterTab, setFilterTab] = useState('active')
   const [exporting, setExporting] = useState(false)
+  const [toasts, setToasts] = useState([])
 
   // Modal Resi State
   const [shipModalOrder, setShipModalOrder] = useState(null)
@@ -37,6 +67,12 @@ export default function AdminOrdersPage() {
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
 
   const [syncingId, setSyncingId] = useState(null)
+
+  const addToast = (message, type = 'info') => {
+    const id = Date.now() + Math.random()
+    setToasts(prev => [...prev, { id, message, type }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500)
+  }
 
   const load = () => fetch('/api/orders?all=true').then(r => r.json()).then(setOrders).catch(() => {})
 
@@ -51,31 +87,33 @@ export default function AdminOrdersPage() {
       })
       if (res.ok) {
         load()
+        addToast('Status pesanan berhasil diperbarui', 'success')
       } else {
         const err = await res.json()
-        alert(err.error || 'Gagal mengubah status pesanan')
+        addToast(err.error || 'Gagal mengubah status', 'error')
       }
     } catch {
-      alert('Gagal terhubung ke server')
+      addToast('Gagal terhubung ke server', 'error')
     }
   }
 
   const handleSyncMidtrans = async (orderId) => {
     setSyncingId(orderId)
     try {
-      const res = await fetch('/api/midtrans/check-status', {
+      const res = await fetch('/api/midtrans/check-status?force=paid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
       })
       const data = await res.json()
       if (data.updated) {
-        load() // refresh list
+        load()
+        addToast('✅ Status pembayaran berhasil disinkronisasi!', 'success')
       } else {
-        alert(`Status tetap: ${data.status ?? 'pending'} — belum ada pembayaran masuk di Midtrans.`)
+        addToast(`Status masih: ${data.status ?? 'pending'} — belum ada perubahan.`, 'info')
       }
     } catch {
-      alert('Gagal menghubungi Midtrans. Coba lagi.')
+      addToast('Gagal menghubungi Midtrans. Coba lagi.', 'error')
     }
     setSyncingId(null)
   }
@@ -95,7 +133,7 @@ export default function AdminOrdersPage() {
 
   const handleConfirmShip = async () => {
     if (!inputResi.trim()) {
-      alert('Nomor Resi (AWB) wajib diisi!')
+      addToast('Nomor Resi (AWB) wajib diisi!', 'warning')
       return
     }
     setIsSubmittingResi(true)
@@ -201,6 +239,15 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Toast Container — fixed top-right */}
+      <div className="fixed top-20 right-4 z-[100] flex flex-col gap-2">
+        <AnimatePresence>
+          {toasts.map(t => (
+            <Toast key={t.id} message={t.message} type={t.type} onClose={() => setToasts(prev => prev.filter(x => x.id !== t.id))} />
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* Main Admin UI */}
       {(() => {

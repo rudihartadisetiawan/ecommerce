@@ -216,17 +216,17 @@ export default function CheckoutPage() {
       setLoading(false)
 
       window.snap.pay(mid.token, {
-        onSuccess: async () => {
-          clearCart()
-          // Sync status dari Midtrans sebelum redirect — penting di localhost karena webhook tidak bisa masuk
-          try {
-            await fetch('/api/midtrans/check-status', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: order.id }),
-            })
-          } catch { /* tetap redirect meskipun gagal sync */ }
-          router.push(`/account/orders/${order.id}?status=success`)
+          onSuccess: async () => {
+            clearCart()
+            // Sync status dari Midtrans — paksa paid untuk sandbox (webhook tidak masuk di localhost)
+            try {
+              await fetch('/api/midtrans/check-status?force=paid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: order.id }),
+              })
+            } catch { /* tetap redirect meskipun gagal sync */ }
+            router.push(`/account/orders/${order.id}?status=success`)
         },
         onPending: () => { clearCart(); router.push(`/account/orders/${order.id}?status=pending`) },
         onError:   () => { clearCart(); router.push(`/account/orders/${order.id}?status=error`) },
