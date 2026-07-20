@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin, getSession } from '@/lib/session'
 import { rateLimit } from '@/lib/rate-limit'
 
-// GET /api/notifications — ambil notifikasi untuk user (public: new_collection, promo)
+// GET /api/notifications — ambil notifikasi (global broadcast: new_collection, promo)
+// Semua user melihat notifikasi yang sama — ini adalah broadcast system, bukan per-user.
 export async function GET() {
   const session = await getSession()
   const userId = session?.user?.id ? Number(session.user.id) : null

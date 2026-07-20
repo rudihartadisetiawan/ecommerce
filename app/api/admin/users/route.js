@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
+import { z } from 'zod'
+
+// S-07: Role hanya bisa admin atau customer — super_admin TIDAK bisa di-set via API
+const updateRoleSchema = z.object({
+  userId: z.number().int().positive(),
+  role: z.enum(['admin', 'customer']),
+}).strict()
 
 export async function GET() {
   const session = await getSession()
@@ -97,11 +104,9 @@ export async function PUT(request) {
   }
 
   const body = await request.json()
-  const { userId, role } = body
-
-  if (!userId || !role) {
-    return NextResponse.json({ error: 'MISSING_FIELDS' }, { status: 400 })
-  }
+  const parsed = updateRoleSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: 'INVALID', issues: parsed.error.issues }, { status: 400 })
+  const { userId, role } = parsed.data
 
   const updated = await prisma.user.update({
     where: { id: Number(userId) },

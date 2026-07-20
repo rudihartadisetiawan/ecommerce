@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin, getSession } from '@/lib/session'
-import { serializeProduct } from '@/lib/serialize'
+import { serializeProduct, serializeProductAdmin } from '@/lib/serialize'
 import { z } from 'zod'
 
 export async function GET(request, { params }) {
@@ -14,6 +14,11 @@ export async function GET(request, { params }) {
   return NextResponse.json(serializeProduct(product))
 }
 
+const colorSchema = z.object({
+  name: z.string().min(1),
+  hex: z.string().regex(/^#?[0-9a-fA-F]{6}$/),
+}).strict()
+
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
@@ -22,7 +27,7 @@ const updateSchema = z.object({
   costPrice: z.number().int().nonnegative().optional(),
   category: z.string().min(1).optional(),
   sizes: z.array(z.string()).optional(),
-  colors: z.array(z.any()).optional(),
+  colors: z.array(colorSchema).optional(),
   images: z.array(z.string()).optional(),
   stock: z.number().int().nonnegative().optional(),
   isActive: z.boolean().optional(),
@@ -39,7 +44,7 @@ export async function PUT(request, { params }) {
   if (!parsed.success) return NextResponse.json({ error: 'INVALID', issues: parsed.error.issues }, { status: 400 })
   try {
     const product = await prisma.product.update({ where: { id: Number(id) }, data: parsed.data })
-    return NextResponse.json(serializeProduct(product))
+    return NextResponse.json(serializeProductAdmin(product))
   } catch (e) {
     if (e.code === 'P2025') return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     return NextResponse.json({ error: 'SLUG_TAKEN' }, { status: 409 })

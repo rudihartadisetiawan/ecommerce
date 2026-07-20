@@ -62,21 +62,35 @@ export async function PUT(request, { params }) {
   try {
     const dataToUpdate = {}
     if (body.status) dataToUpdate.status = body.status
-    if (body.trackingNumber !== undefined) dataToUpdate.trackingNumber = body.trackingNumber
-    if (body.receivedProofImage !== undefined) dataToUpdate.receivedProofImage = body.receivedProofImage
+    // S-10: trackingNumber & receivedProofImage hanya bisa di-set oleh admin/super_admin
+    if (isAdmin) {
+      if (body.trackingNumber !== undefined) dataToUpdate.trackingNumber = body.trackingNumber
+      if (body.receivedProofImage !== undefined) dataToUpdate.receivedProofImage = body.receivedProofImage
+    }
 
     if (Object.keys(dataToUpdate).length === 0) {
       return NextResponse.json({ error: 'NO_DATA_TO_UPDATE' }, { status: 400 })
     }
 
-    // Restock produk jika pesanan dibatalkan (dan belum pernah dibatalkan sebelumnya)
+    // S-13: Restock produk jika pesanan dibatalkan — update stock & stockPerVariant
     if (body.status === 'cancelled' && existingOrder.status !== 'cancelled') {
       await Promise.all(
-        (existingOrder.items || []).map((item) => {
-          if (!item.productId) return Promise.resolve()
-          return prisma.product.update({
+        (existingOrder.items || []).map(async (item) => {
+          if (!item.productId) return
+          const product = await prisma.product.findUnique({
             where: { id: item.productId },
-            data: { stock: { increment: item.qty } },
+            select: { stockPerVariant: true },
+          })
+          const updateData = { stock: { increment: item.qty } }
+          if (product?.stockPerVariant) {
+            const varKey = `${item.variant?.size || ''}-${item.variant?.colorName || item.variant?.color || ''}`
+            const updated = { ...product.stockPerVariant }
+            if (updated[varKey] !== undefined) updated[varKey] = (updated[varKey] ?? 0) + item.qty
+            updateData.stockPerVariant = updated
+          }
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: updateData,
           })
         })
       )

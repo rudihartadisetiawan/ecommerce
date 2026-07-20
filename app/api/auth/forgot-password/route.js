@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimit, getClientIP } from '@/lib/rate-limit'
 
 export async function POST(request) {
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
-  if (!rateLimit(`forgot:${ip}`, 3, 3600000)) {
-    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-  }
-
+  const ip = getClientIP(request)
   const body = await request.json()
   const { email } = body
   if (!email) return NextResponse.json({ error: 'EMAIL_REQUIRED' }, { status: 400 })
+
+  // Dual key: per-IP + per-email — IP spoofing tidak bypass karena email juga di-limit
+  if (!rateLimit(`forgot:${ip}`, 3, 3600000) || !rateLimit(`forgot-email:${email.toLowerCase()}`, 3, 3600000)) {
+    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+  }
 
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
   if (!user) {
@@ -22,11 +23,13 @@ export async function POST(request) {
   // Hapus token lama untuk email ini
   await prisma.passwordReset.deleteMany({ where: { email: email.toLowerCase() } })
 
+  // S-08: Hash token sebelum simpan ke DB — cegah ekspos token di backup/dump
   const token = crypto.randomBytes(32).toString('hex')
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
   await prisma.passwordReset.create({
     data: {
       email: email.toLowerCase(),
-      token,
+      token: hashedToken,
       expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 jam
     },
   })

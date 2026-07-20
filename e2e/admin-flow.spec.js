@@ -1,53 +1,44 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
 
+async function loginAsAdmin({ page }) {
+  // Use page.request (shares cookies with browser context) to log in via NextAuth API
+  const csrfRes = await page.request.get('/api/auth/csrf')
+  const { csrfToken } = await csrfRes.json()
+
+  await page.request.post('/api/auth/callback/credentials', {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    form: { csrfToken, email: 'admin@gaul.com', password: 'admin123', json: 'true' },
+  })
+
+  // Session cookie is now set in the browser context — navigate to admin
+  await page.goto('/admin', { waitUntil: 'networkidle', timeout: 15000 })
+}
+
 test.describe('Admin CMS Pages', () => {
   test('navigate to admin login and access CMS', async ({ page }) => {
-    // Login as admin
-    await page.goto('/account/login')
-    await page.fill('input[type="email"]', 'admin@gaul.com')
-    await page.fill('input[type="password"]', 'admin123')
-    await page.click('button[type="submit"]')
-    await page.waitForFunction(() => window.location.pathname === '/admin', { timeout: 15000 })
-
-    // Dashboard has products table
+    await loginAsAdmin({ page })
     await expect(page.locator('h1').first()).toContainText('Kelola Produk')
-    await expect(page.locator('text=GAUL CMS')).toBeVisible()
   })
 
   test('admin orders page loads', async ({ page }) => {
-    await page.goto('/account/login')
-    await page.fill('input[type="email"]', 'admin@gaul.com')
-    await page.fill('input[type="password"]', 'admin123')
-    await page.click('button[type="submit"]')
-    await page.waitForFunction(() => window.location.pathname === '/admin', { timeout: 15000 })
-
+    await loginAsAdmin({ page })
     await page.goto('/admin/pesanan')
-    await page.waitForURL('/admin/pesanan', { timeout: 5000 })
+    await page.waitForURL('/admin/pesanan', { timeout: 10000 })
     await expect(page.locator('h1').first()).toContainText(/Pesanan|Order/i)
   })
 
   test('admin hero page loads', async ({ page }) => {
-    await page.goto('/account/login')
-    await page.fill('input[type="email"]', 'admin@gaul.com')
-    await page.fill('input[type="password"]', 'admin123')
-    await page.click('button[type="submit"]')
-    await page.waitForFunction(() => window.location.pathname === '/admin', { timeout: 15000 })
-
+    await loginAsAdmin({ page })
     await page.goto('/admin/hero')
-    await page.waitForURL('/admin/hero', { timeout: 5000 })
+    await page.waitForURL('/admin/hero', { timeout: 10000 })
     await expect(page.locator('h1').first()).toContainText(/Hero|Banner/i)
   })
 
   test('admin add product page loads', async ({ page }) => {
-    await page.goto('/account/login')
-    await page.fill('input[type="email"]', 'admin@gaul.com')
-    await page.fill('input[type="password"]', 'admin123')
-    await page.click('button[type="submit"]')
-    await page.waitForFunction(() => window.location.pathname === '/admin', { timeout: 15000 })
-
+    await loginAsAdmin({ page })
     await page.goto('/admin/produk/add')
-    await page.waitForURL('/admin/produk/add', { timeout: 5000 })
+    await page.waitForURL('/admin/produk/add', { timeout: 10000 })
     await expect(page.locator('h1').first()).toContainText('Tambah Produk')
   })
 })

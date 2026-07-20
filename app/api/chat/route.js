@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { chatBus } from '@/lib/chat-bus'
 import { serializeProduct } from '@/lib/serialize'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function GET(request) {
   const session = await getSession()
@@ -142,6 +143,11 @@ export async function GET(request) {
 export async function POST(request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+
+  // S-11: Rate limit chat — max 20 pesan per 10 detik
+  if (!rateLimit(`chat:${session.user.id}`, 20, 10000)) {
+    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+  }
 
   const body = await request.json()
   const { message, targetUserId, productId } = body

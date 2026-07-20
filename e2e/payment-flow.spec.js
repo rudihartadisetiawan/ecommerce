@@ -94,9 +94,13 @@ test.describe('Payment Flow', () => {
     await expect(page.locator('text=Keranjang masih kosong')).toBeVisible({ timeout: 10000 })
   })
 
-  test('guest redirect on checkout', async ({ page }) => {
+  test('guest can access checkout (guest checkout feature)', async ({ page }) => {
+    // Guest checkout is supported — guests can see the checkout page directly
     await page.goto('/checkout')
-    await page.waitForURL(/\/account\/login/, { timeout: 10000 })
-    expect(page.url()).toContain('callbackUrl')
+    await page.waitForURL('/checkout', { timeout: 10000 })
+    // Either the checkout form (empty cart state) or the checkout heading
+    const emptyCart = page.locator('text=Keranjang masih kosong')
+    const checkoutHeading = page.locator('h1:has-text("Checkout")')
+    await expect(emptyCart.or(checkoutHeading)).toBeVisible({ timeout: 5000 })
   })
 })

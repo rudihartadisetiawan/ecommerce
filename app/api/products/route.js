@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
-import { serializeProduct } from '@/lib/serialize'
+import { serializeProduct, serializeProductAdmin } from '@/lib/serialize'
 import { z } from 'zod'
 
 export async function GET(request) {
@@ -29,11 +29,11 @@ export async function GET(request) {
   // ponytail: all=true return semua tanpa pagination (untuk admin & export)
   if (all) {
     const products = await prisma.product.findMany({ where, orderBy })
-    return NextResponse.json(products.map(serializeProduct))
+    return NextResponse.json(products.map(serializeProductAdmin))
   }
 
-  const page = Math.max(1, parseInt(searchParams.get('page')) || 1)
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit')) || 12))
+  const page = Math.max(1, parseInt(searchParams.get('page'), 10) || 1)
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit'), 10) || 12))
   const skip = (page - 1) * limit
 
   const [products, total] = await Promise.all([
@@ -49,6 +49,12 @@ export async function GET(request) {
   })
 }
 
+// S-15: colors harus array of { name, hex } — cegah arbitrary JSON / prototype pollution
+const colorSchema = z.object({
+  name: z.string().min(1),
+  hex: z.string().regex(/^#?[0-9a-fA-F]{6}$/, 'Invalid hex color'),
+}).strict()
+
 const productSchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
@@ -57,7 +63,7 @@ const productSchema = z.object({
   costPrice: z.number().int().nonnegative().default(0),
   category: z.string().min(1),
   sizes: z.array(z.string()).default([]),
-  colors: z.array(z.any()).default([]),
+  colors: z.array(colorSchema).default([]),
   images: z.array(z.string()).default([]),
   stock: z.number().int().nonnegative().default(0),
   isActive: z.boolean().default(true),
@@ -84,7 +90,7 @@ export async function POST(request) {
         },
       })
     } catch {}
-    return NextResponse.json(serializeProduct(product), { status: 201 })
+    return NextResponse.json(serializeProductAdmin(product), { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: 'SLUG_TAKEN' }, { status: 409 })
   }

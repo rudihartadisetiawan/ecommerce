@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -17,7 +18,9 @@ export async function POST(request) {
 
   const { token, password } = parsed.data
 
-  const reset = await prisma.passwordReset.findUnique({ where: { token } })
+  // S-08: Hash incoming token sebelum lookup — token di DB sudah di-hash
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
+  const reset = await prisma.passwordReset.findUnique({ where: { token: hashedToken } })
   if (!reset) {
     return NextResponse.json({ error: 'Token tidak valid' }, { status: 400 })
   }

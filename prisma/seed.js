@@ -98,13 +98,15 @@ async function main() {
     process.exit(1)
   }
 
+  const pwHash = await bcrypt.hash(adminPassword, 10)
+  const ownerHash = await bcrypt.hash(ownerPassword, 10)
   await prisma.user.upsert({
     where: { email: 'admin@gaul.com' },
-    update: {},
+    update: { passwordHash: pwHash, role: 'admin', name: 'Admin GAUL' },
     create: {
       name: 'Admin GAUL',
       email: 'admin@gaul.com',
-      passwordHash: await bcrypt.hash(adminPassword, 10),
+      passwordHash: pwHash,
       role: 'admin',
       phone: '0812000000',
     },
@@ -112,11 +114,11 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'owner@gaul.com' },
-    update: {},
+    update: { passwordHash: ownerHash, role: 'super_admin', name: 'Rudi' },
     create: {
       name: 'Rudi',
       email: 'owner@gaul.com',
-      passwordHash: await bcrypt.hash(ownerPassword, 10),
+      passwordHash: ownerHash,
       role: 'super_admin',
       phone: '0813000000',
     },
