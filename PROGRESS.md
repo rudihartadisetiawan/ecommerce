@@ -942,3 +942,27 @@ Temuan baru dari audit keamanan menyeluruh yang mencakup kupon, guest checkout, 
 ✅ Chat CS sync proper (unread count)
 ✅ Log login admin terintegrasi di halaman Staff
 ✅ Data pelanggan terpisah dari staff dengan analisis + export CSV
+
+### 6. Admin Activity Log — Semua Aksi Admin Tercatat
+
+**Model baru**: `AdminLog` — userId, name, action, target, detail, createdAt
+
+| Perubahan | Detail |
+|-----------|--------|
+| `prisma/schema.prisma` | +`AdminLog` model |
+| `prisma/migrations/20260721223638_add_admin_log/` | Migration baru |
+| `lib/admin-log.js` | Helper `logAdminAction(session, action, target, detail)` — fire-and-forget |
+| `app/api/products/route.js` | Log `create_product` setelah POST sukses |
+| `app/api/products/[id]/route.js` | Log `update_product` (PUT) + `delete_product` (DELETE) |
+| `app/api/orders/[id]/route.js` | Log `update_order` saat admin ubah status |
+| `app/api/hero/route.js` | Log `create_hero` setelah POST sukses |
+| `app/api/hero/[id]/route.js` | Log `update_hero` (PUT) + `delete_hero` (DELETE) |
+| `app/api/content/route.js` | Log `update_content` setelah PUT sukses |
+| `app/api/admin/coupons/route.js` | Log `create_coupon`, `update_coupon`, `delete_coupon` |
+| `app/api/admin/users/route.js` | Log `create_staff`, `update_user_role` |
+| `app/api/notifications/route.js` | Log `create_notification` setelah POST sukses |
+| `app/api/admin/login-logs/route.js` | Diperluas: dukung `?type=login\|activity\|all` — gabung LoginLog + AdminLog |
+| `app/admin/users/page.js` | Tab filter "Semua / Login / Aktivitas" — tampilkan aksi admin real-time |
+
+**Build**
+✅ 46+ routes, 0 error

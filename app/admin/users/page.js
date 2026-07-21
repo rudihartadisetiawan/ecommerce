@@ -73,7 +73,7 @@ export default function AdminUsersPage() {
     setTimeout(() => setMsg(''), 4000)
   }
 
-  const [logFilter, setLogFilter] = useState('all') // 'all' | 'login' | 'activity'
+  const [logFilter, setLogFilter] = useState('all') // 'all' | 'login' | 'admin'
 
   const toggleLogs = async () => {
     if (showLogs) { setShowLogs(false); return }
@@ -256,7 +256,7 @@ export default function AdminUsersPage() {
                 {[
                   { key: 'all', label: 'Semua' },
                   { key: 'login', label: 'Login' },
-                  { key: 'activity', label: 'Aktivitas' },
+                  { key: 'admin', label: 'Aktivitas' },
                 ].map(tab => (
                   <button
                     key={tab.key}

@@ -9,7 +9,8 @@ export async function GET(request) {
   }
 
   const { searchParams } = new URL(request.url)
-  const type = searchParams.get('type') // 'login' | 'admin' | null (all)
+  const rawType = searchParams.get('type') // 'login' | 'admin' | 'activity' | null (all)
+  const type = rawType === 'activity' ? 'admin' : rawType
 
   let result = []
 
