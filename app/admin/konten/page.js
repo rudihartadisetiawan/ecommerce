@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ImageUpload from '@/components/ui/ImageUpload'
+import { useToast } from '@/components/ui/Toast'
 
 const BLOCK_KEYS = ['kategori-pilihan', 'tentang-gaul']
 
@@ -33,6 +34,7 @@ function defaultData(key) {
 }
 
 export default function AdminKontenPage() {
+  const addToast = useToast()
   const [blocks, setBlocks] = useState({})
   const [loading, setLoading] = useState(true)
 
@@ -73,10 +75,10 @@ export default function AdminKontenPage() {
       body: JSON.stringify({ label: block.label, data: block.data }),
     })
     if (res.ok) {
-      alert('Berhasil disimpan!')
+      addToast('✅ Berhasil disimpan!', 'success')
       load()
     } else {
-      alert('Gagal menyimpan.')
+      addToast('❌ Gagal menyimpan.', 'error')
     }
   }
 
