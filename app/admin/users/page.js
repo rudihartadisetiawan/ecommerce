@@ -81,7 +81,8 @@ export default function AdminUsersPage() {
     setLogsLoading(true)
     setShowLogs(true)
     try {
-      const res = await fetch(`/api/admin/login-logs?type=${logFilter}`)
+      const params = logFilter === 'all' ? '' : `?type=${logFilter}`
+      const res = await fetch(`/api/admin/login-logs${params}`)
       if (res.ok) setLoginLogs(await res.json())
     } catch {} finally { setLogsLoading(false) }
   }
@@ -89,7 +90,8 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (showLogs && isSuperAdmin) {
       setLogsLoading(true)
-      fetch(`/api/admin/login-logs?type=${logFilter}`)
+      const params = logFilter === 'all' ? '' : `?type=${logFilter}`
+      fetch(`/api/admin/login-logs${params}`)
         .then(r => r.json())
         .then(d => { if (Array.isArray(d)) setLoginLogs(d) })
         .catch(() => {})

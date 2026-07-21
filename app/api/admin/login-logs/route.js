@@ -9,23 +9,24 @@ export async function GET(request) {
   }
 
   const { searchParams } = new URL(request.url)
-  const rawType = searchParams.get('type') // 'login' | 'admin' | 'activity' | null (all)
+  const rawType = searchParams.get('type')
+  const isAll = !rawType || rawType === '' || rawType === 'all'
   const type = rawType === 'activity' ? 'admin' : rawType
 
   let result = []
 
-  if (!type || type === 'login') {
+  if (isAll || type === 'login') {
     const loginLogs = await prisma.loginLog.findMany({
       orderBy: { createdAt: 'desc' },
-      take: type === 'login' ? 100 : 50,
+      take: isAll ? 50 : 100,
     })
     result = [...result, ...loginLogs.map(l => ({ ...l, logType: 'login', createdAt: l.createdAt.toISOString() }))]
   }
 
-  if (!type || type === 'admin') {
+  if (isAll || type === 'admin') {
     const adminLogs = await prisma.adminLog.findMany({
       orderBy: { createdAt: 'desc' },
-      take: type === 'admin' ? 100 : 50,
+      take: isAll ? 50 : 100,
     })
     result = [...result, ...adminLogs.map(l => ({ ...l, logType: 'activity', createdAt: l.createdAt.toISOString() }))]
   }
