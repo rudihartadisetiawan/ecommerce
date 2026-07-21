@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ConfirmModal from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 
 export default function AdminCouponPage() {
+  const addToast = useToast()
   const [coupons, setCoupons] = useState([])
   const [confirmDelete, setConfirmDelete] = useState(null) // id kupon yang akan dihapus
   const [showAdd, setShowAdd] = useState(false)
@@ -18,14 +20,23 @@ export default function AdminCouponPage() {
   const handleAdd = async (e) => {
     e.preventDefault()
     setMsg('')
+    const payload = {
+      code: form.code,
+      type: form.type,
+      value: Number(form.value),
+      minPurchase: Number(form.minPurchase) || 0,
+      maxUses: Number(form.maxUses) || 0,
+      expiresAt: form.expiresAt || undefined,
+    }
     const res = await fetch('/api/admin/coupons', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     })
-    if (!res.ok) { const d = await res.json(); setMsg(d.error || 'Gagal'); return }
+    if (!res.ok) { const d = await res.json(); addToast('❌ ' + (d.error || 'Gagal'), 'error'); return }
     setShowAdd(false)
     setForm({ code: '', type: 'percentage', value: '', minPurchase: '0', maxUses: '0', expiresAt: '' })
+    addToast('✅ Kupon berhasil dibuat!', 'success')
     load()
   }
 
