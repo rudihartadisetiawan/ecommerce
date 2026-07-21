@@ -964,5 +964,13 @@ Temuan baru dari audit keamanan menyeluruh yang mencakup kupon, guest checkout, 
 | `app/api/admin/login-logs/route.js` | Diperluas: dukung `?type=login\|activity\|all` — gabung LoginLog + AdminLog |
 | `app/admin/users/page.js` | Tab filter "Semua / Login / Aktivitas" — tampilkan aksi admin real-time |
 
+### 7. Fix: Admin Log Filter Mismatch + Hero/Konten Toast Notification
+
+| Perbaikan | Detail |
+|-----------|--------|
+| **Log filter mismatch** | API `login-logs`: kondisional `if (!type || type === 'login')` tidak menangkap `type='all'` → pakai `isAll` untuk null/''/'all'. Frontend: kirim kosong tanpa `?type` saat filter 'Semua'. |
+| **Konfirmasi simpan Hero** | Tombol "Simpan Perubahan" di hero section sekarang munculkan ConfirmModal dulu. |
+| **Toast notifikasi** | Ganti semua `alert()` di hero & konten page dengan `useToast()` — animasi Framer Motion, auto-hilang 3 detik. |
+
 **Build**
 ✅ 46+ routes, 0 error
