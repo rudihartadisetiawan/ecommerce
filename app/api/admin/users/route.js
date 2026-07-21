@@ -10,13 +10,21 @@ const updateRoleSchema = z.object({
   role: z.enum(['admin', 'customer']),
 }).strict()
 
-export async function GET() {
+export async function GET(request) {
   const session = await getSession()
   if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
   }
 
+  const { searchParams } = new URL(request.url)
+  const filter = searchParams.get('filter') // 'staff' | 'customer' | 'all'
+
+  const where = {}
+  if (filter === 'staff') where.role = { in: ['admin', 'super_admin'] }
+  else if (filter === 'customer') where.role = 'customer'
+
   const users = await prisma.user.findMany({
+    where,
     select: {
       id: true,
       name: true,

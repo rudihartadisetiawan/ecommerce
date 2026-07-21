@@ -163,6 +163,26 @@ model Notification {
   sentAt  DateTime @default(now())
 }
 
+// LoginLog — catatan login admin/super_admin
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  role      String
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+// ContentBlock — konten dinamis homepage (Kategori Pilihan, Tentang GAUL, dll)
+// key: identifier unik, data: Json { images, texts, dll }
+model ContentBlock {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  label     String   // Nama tampilan admin, misal "Kategori Pilihan"
+  data      Json     @db.Json
+  updatedAt DateTime @updatedAt
+}
+
 model ChatMessage {
   id          Int      @id @default(autoincrement())
   user        User     @relation(fields: [userId], references: [id])

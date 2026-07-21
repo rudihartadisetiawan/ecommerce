@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useCart } from '@/lib/cart-context'
+import { useState } from 'react'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 const links = [
   { label: 'Profil', href: '/account/profile', icon: (active) => <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg> },
@@ -15,6 +17,7 @@ const links = [
 export default function AccountNav() {
   const path = usePathname()
   const { clearCart } = useCart()
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   return (
     <nav className="space-y-1">
@@ -47,7 +50,7 @@ export default function AccountNav() {
         )
       })}
       <button
-        onClick={() => { clearCart(); signOut({ callbackUrl: '/' }) }}
+        onClick={() => setConfirmLogout(true)}
         className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-red-400 transition-all hover:bg-red-50 hover:text-red-500"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -55,6 +58,16 @@ export default function AccountNav() {
         </svg>
         Keluar
       </button>
+
+      <ConfirmModal
+        open={confirmLogout}
+        title="Yakin keluar?"
+        message="Anda akan logout dari akun Anda."
+        confirmLabel="Keluar"
+        cancelLabel="Batal"
+        onConfirm={() => { setConfirmLogout(false); clearCart(); signOut({ callbackUrl: '/' }) }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </nav>
   )
 }

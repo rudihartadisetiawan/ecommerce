@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import Container from '../ui/Container'
 import { useCart } from '@/lib/cart-context'
 import NotificationBell from './NotificationBell'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 const navLinks = [
   { label: 'Koleksi', href: '/produk' },
@@ -18,6 +19,7 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
   const { data: session, status } = useSession()
   const { totalItems } = useCart()
   const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin'
@@ -70,7 +72,7 @@ export default function Navigation() {
                   </Link>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-                  <button onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }) }} className="font-[var(--font-display)] text-lg text-red-400">
+                  <button onClick={() => { setMobileOpen(false); setConfirmLogout(true) }} className="font-[var(--font-display)] text-lg text-red-400">
                     Keluar
                   </button>
                 </motion.div>
@@ -137,7 +139,7 @@ export default function Navigation() {
                     <Link href="/admin" className="text-sm font-medium text-[var(--color-accent)] transition-colors hover:opacity-70">
                       {session.user.name?.split(' ')[0] || 'Admin'}
                     </Link>
-                    <button onClick={() => signOut({ callbackUrl: '/' })} className="text-xs font-medium text-red-400 transition-colors hover:text-red-500">
+                    <button onClick={() => setConfirmLogout(true)} className="text-xs font-medium text-red-400 transition-colors hover:text-red-500">
                       Keluar
                     </button>
                   </>
@@ -195,6 +197,16 @@ export default function Navigation() {
 
       {/* Mobile overlay — portaled to body to avoid GSAP DOM conflicts */}
       {mobileOverlay}
+
+      <ConfirmModal
+        open={confirmLogout}
+        title="Yakin keluar?"
+        message="Anda akan logout dari akun Anda."
+        confirmLabel="Keluar"
+        cancelLabel="Batal"
+        onConfirm={() => { setConfirmLogout(false); signOut({ callbackUrl: '/' }) }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </>
   )
 }

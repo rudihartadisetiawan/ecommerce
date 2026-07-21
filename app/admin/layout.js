@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 const nav = [
   { label: 'Produk', href: '/admin' },
@@ -11,13 +12,16 @@ const nav = [
   { label: 'Chat', href: '/admin/chat' },
   { label: 'Kupon', href: '/admin/kupon' },
   { label: 'Hero', href: '/admin/hero' },
+  { label: 'Konten', href: '/admin/konten' },
   { label: 'Staff', href: '/admin/users' },
+  { label: 'Pelanggan', href: '/admin/pelanggan', superOnly: true },
 ]
 
 export default function AdminLayout({ children }) {
   const path = usePathname()
   const router = useRouter()
   const { data: session, status } = useSession()
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin') {
@@ -38,7 +42,7 @@ export default function AdminLayout({ children }) {
           <div className="flex items-center gap-6">
             <Link href="/admin" className="font-[var(--font-display)] text-lg text-[var(--color-text-primary)]">GAUL CMS</Link>
             <nav className="hidden items-center gap-4 sm:flex">
-              {nav.map(n => (
+              {nav.filter(n => !n.superOnly || session?.user?.role === 'super_admin').map(n => (
                 <Link
                   key={n.href}
                   href={n.href}
@@ -59,7 +63,7 @@ export default function AdminLayout({ children }) {
           <div className="flex items-center gap-3">
             <Link href="/" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">← Lihat Toko</Link>
             <button
-              onClick={() => signOut({ callbackUrl: '/' })}
+              onClick={() => setConfirmLogout(true)}
               className="rounded-full border border-red-200 px-3 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-red-300"
             >
               Keluar
@@ -68,6 +72,16 @@ export default function AdminLayout({ children }) {
         </div>
       </header>
       <main className="pt-14">{children}</main>
+
+      <ConfirmModal
+        open={confirmLogout}
+        title="Yakin keluar?"
+        message="Anda akan logout dari CMS. Perubahan yang belum disimpan akan hilang."
+        confirmLabel="Keluar"
+        cancelLabel="Batal"
+        onConfirm={() => { setConfirmLogout(false); signOut({ callbackUrl: '/' }) }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </div>
   )
 }

@@ -874,3 +874,71 @@ Temuan baru dari audit keamanan menyeluruh yang mencakup kupon, guest checkout, 
 ### Security Status Final
 
 ✅ **0 temuan tersisa** — semua 19 temuan dari Full Re-Test sudah di-fix.
+
+---
+
+## Sesi 2026-07-21 — Konten Homepage Dinamis + Konfirmasi Aksi + Chat Fix + Log Login + Pemisahan Data Pelanggan
+
+### 1. Konten Homepage Bisa Diedit Admin (Kategori Pilihan & Tentang GAUL)
+
+**Model baru**: `ContentBlock` — key unik + data JSON + label
+
+| File | Perubahan |
+|------|-----------|
+| `prisma/schema.prisma` | +`ContentBlock` model |
+| `prisma/migrations/20260721204545_add_content_block/` | Migration baru |
+| `app/api/content/route.js` | GET (public, semua/satu block) + PUT (admin update) |
+| `app/admin/konten/page.js` | Halaman admin kelola gambar+teks Kategori Pilihan (4 kategori) + Tentang GAUL (gambar, judul, 2 paragraf, tombol) |
+| `app/(shop)/page.js` | Homepage ambil data dari API, fallback ke teks default |
+| `app/admin/layout.js` | +Menu "Konten" di nav CMS |
+
+**Seed data**: Kategori Pilihan (4 kategori) + Tentang GAUL (gambar, cerita, CTA) langsung diisi via script.
+
+### 2. Konfirmasi Modal untuk Semua Aksi Destruktif
+
+| Halaman | Aksi | Sebelum | Sesudah |
+|---------|------|---------|---------|
+| `app/admin/layout.js` | Logout | Langsung `signOut()` | Modal "Yakin keluar?" (Framer Motion) |
+| `components/shop/AccountNav.js` | Logout | Langsung `signOut()` | Modal "Yakin keluar?" |
+| `components/shop/Navigation.js` | Logout | Langsung `signOut()` (desktop & mobile) | Modal "Yakin keluar?" |
+| `app/admin/hero/page.js` | Hapus banner | `confirm()` browser native | Modal "Hapus banner?" |
+| `app/admin/kupon/page.js` | Hapus kupon | `confirm()` browser native | Modal "Hapus kupon?" |
+
+### 3. Fix Sinkronisasi Live Chat CS
+
+| Issue | Fix |
+|-------|-----|
+| Unread badge tidak pernah increment | Pakai `activeIdRef.current` (bukan `activeId` stale closure) |
+| Unread selalu reset ke 0 untuk pesan baru | Increment unread jika bukan conversation yang sedang dibuka |
+
+### 4. Login Log Admin (otomatis + terintegrasi di halaman Staff)
+
+| Perubahan | Detail |
+|-----------|--------|
+| `prisma/schema.prisma` | +`LoginLog` model (userId, name, role, ip, createdAt) |
+| `prisma/migrations/20260721220212_add_login_log/` | Migration baru |
+| `lib/auth.js` | Log otomatis setiap admin/super_admin login (dengan IP dari request) |
+| `app/api/admin/login-logs/route.js` | API GET — super_admin only, 100 log terakhir |
+| `app/admin/users/page.js` | Section collapsible "Riwayat Login Staff" di bawah tabel staff |
+
+### 5. Pemisahan Staff & Data Pelanggan
+
+| Perubahan | Detail |
+|-----------|--------|
+| `app/api/admin/users/route.js` | +`?filter=staff|customer` untuk memisahkan data |
+| `app/admin/users/page.js` | Sekarang hanya tampilkan staff (admin + super_admin), dropdown role hanya Super Admin / Admin Staff |
+| `app/admin/pelanggan/page.js` | Halaman baru — daftar pelanggan dengan analisis: total belanja, frekuensi, kategori favorit, ukuran favorit, kota, pembayaran favorit |
+| `app/admin/pelanggan/page.js` | +Export CSV semua kolom |
+| `app/api/admin/customers/route.js` | API agregasi: total spent, order count, last order date, preferred category/size/payment, city parsing |
+| `app/admin/layout.js` | Nav "Pelanggan" (super_admin only) |
+
+### Build
+✅ Routes: 46+, 0 error
+✅ Semua API endpoint berfungsi
+
+### Status Final
+✅ Konten homepage bisa diedit admin tanpa perlu kode
+✅ Semua aksi destruktif pakai konfirmasi modal
+✅ Chat CS sync proper (unread count)
+✅ Log login admin terintegrasi di halaman Staff
+✅ Data pelanggan terpisah dari staff dengan analisis + export CSV

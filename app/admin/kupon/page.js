@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 export default function AdminCouponPage() {
   const [coupons, setCoupons] = useState([])
+  const [confirmDelete, setConfirmDelete] = useState(null) // id kupon yang akan dihapus
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ code: '', type: 'percentage', value: '', minPurchase: '0', maxUses: '0', expiresAt: '' })
   const [msg, setMsg] = useState('')
@@ -37,8 +39,8 @@ export default function AdminCouponPage() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Hapus kupon ini?')) return
     await fetch(`/api/admin/coupons?id=${id}`, { method: 'DELETE' })
+    setConfirmDelete(null)
     load()
   }
 
@@ -114,11 +116,21 @@ export default function AdminCouponPage() {
             <div className="flex items-center gap-3">
               <span className="text-xs text-[var(--color-text-secondary)]">{c.usedCount}/{c.maxUses || '∞'}</span>
               {c.expiresAt && <span className="text-[10px] text-[var(--color-text-secondary)]">Exp: {new Date(c.expiresAt).toLocaleDateString('id-ID')}</span>}
-              <button onClick={() => handleDelete(c.id)} className="text-xs text-red-400 hover:text-red-600">Hapus</button>
+              <button onClick={() => setConfirmDelete(c.id)} className="text-xs text-red-400 hover:text-red-600">Hapus</button>
             </div>
           </div>
         ))}
       </div>
+
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Hapus kupon?"
+        message="Kupon akan dihapus permanen. Tindakan ini tidak bisa dibatalkan."
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        onConfirm={() => handleDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

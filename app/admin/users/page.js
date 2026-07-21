@@ -18,13 +18,16 @@ export default function AdminUsersPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [msg, setMsg] = useState('')
+  const [loginLogs, setLoginLogs] = useState([])
+  const [showLogs, setShowLogs] = useState(false)
+  const [logsLoading, setLogsLoading] = useState(false)
 
   const loadUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users')
+      const res = await fetch('/api/admin/users?filter=staff')
       if (res.ok) {
         const data = await res.json()
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setUsers(data)
         }
       }
@@ -70,6 +73,17 @@ export default function AdminUsersPage() {
     setTimeout(() => setMsg(''), 4000)
   }
 
+  const toggleLogs = async () => {
+    if (showLogs) { setShowLogs(false); return }
+    if (!isSuperAdmin) return
+    setLogsLoading(true)
+    setShowLogs(true)
+    try {
+      const res = await fetch('/api/admin/login-logs')
+      if (res.ok) setLoginLogs(await res.json())
+    } catch {} finally { setLogsLoading(false) }
+  }
+
   const handleChangeRole = async (userId, newRole) => {
     try {
       const res = await fetch('/api/admin/users', {
@@ -104,7 +118,7 @@ export default function AdminUsersPage() {
             </span>
           </div>
           <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-            Manajemen akun Super Admin (Owner), Admin Staff (CS/Gudang), dan Pelanggan.
+            Manajemen akun Super Admin (Owner) dan Admin Staff (CS/Gudang).
           </p>
         </div>
 
@@ -178,11 +192,9 @@ export default function AdminUsersPage() {
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border ${
                       isSuper
                         ? 'text-purple-700 bg-purple-50 border-purple-200'
-                        : isAdminStaff
-                        ? 'text-blue-700 bg-blue-50 border-blue-200'
-                        : 'text-gray-600 bg-gray-50 border-gray-200'
+                        : 'text-blue-700 bg-blue-50 border-blue-200'
                     }`}>
-                      {isSuper ? '👑 Super Admin' : isAdminStaff ? '🛠️ Admin Staff' : '👤 Pelanggan'}
+                      {isSuper ? '👑 Super Admin' : '🛠️ Admin Staff'}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-xs text-[var(--color-text-secondary)]">
@@ -199,7 +211,6 @@ export default function AdminUsersPage() {
                       >
                         <option value="super_admin">Set: Super Admin</option>
                         <option value="admin">Set: Admin Staff</option>
-                        <option value="customer">Set: Pelanggan</option>
                       </select>
                     ) : (
                       <span className="text-xs text-[var(--color-text-secondary)] italic opacity-60">Terunci</span>
@@ -211,6 +222,62 @@ export default function AdminUsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Riwayat Login */}
+      {isSuperAdmin && (
+        <div className="mt-8">
+          <button
+            onClick={toggleLogs}
+            className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors"
+          >
+            <svg className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            Riwayat Login Staff
+          </button>
+
+          {showLogs && (
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] shadow-sm">
+              {logsLoading ? (
+                <div className="p-6 text-center text-xs text-[var(--color-text-secondary)]">Memuat...</div>
+              ) : (
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-bg-section)] text-xs font-medium uppercase text-[var(--color-text-secondary)]">
+                      <th className="px-4 py-3">Waktu</th>
+                      <th className="px-4 py-3">Nama</th>
+                      <th className="px-4 py-3">Role</th>
+                      <th className="px-4 py-3">IP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loginLogs.length === 0 ? (
+                      <tr><td colSpan={4} className="px-4 py-8 text-center text-xs text-[var(--color-text-secondary)]">Belum ada riwayat login.</td></tr>
+                    ) : loginLogs.map(l => (
+                      <tr key={l.id} className="border-b border-[var(--color-bg-section)]/50 last:border-0 hover:bg-[var(--color-bg-warm)]/50 transition-colors">
+                        <td className="px-4 py-2.5 whitespace-nowrap text-xs text-[var(--color-text-primary)] font-mono">
+                          {new Date(l.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' })}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs font-medium text-[var(--color-text-primary)]">{l.name}</td>
+                        <td className="px-4 py-2.5">
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
+                            l.role === 'super_admin'
+                              ? 'text-purple-700 bg-purple-50 border-purple-200'
+                              : 'text-blue-700 bg-blue-50 border-blue-200'
+                          }`}>
+                            {l.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)] font-mono">{l.ip || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add Staff Modal */}
       <AnimatePresence>

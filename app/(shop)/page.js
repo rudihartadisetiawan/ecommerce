@@ -36,23 +36,28 @@ function useScrollReveal() {
   return ref
 }
 
-// Category data with Unsplash images
-const categories = [
-  { name: 'Atasan', slug: 'Atasan', image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&h=800&fit=crop', desc: 'Kaos, kemeja, polo — everyday essentials.' },
-  { name: 'Bawahan', slug: 'Bawahan', image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&h=800&fit=crop', desc: 'Chino, cargo, wide leg — siluet santai.' },
-  { name: 'Outerwear', slug: 'Outerwear', image: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=600&h=800&fit=crop', desc: 'Jaket denim, bomber — layering game.' },
-  { name: 'Aksesoris', slug: 'Aksesoris', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=600&h=800&fit=crop', desc: 'Tas, jam, kacamata — pelengkap gaya.' },
-]
-
 export default function ShopPage() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [categories, setCategories] = useState([])
+  const [tentang, setTentang] = useState(null)
   const koleksiRef = useScrollReveal()
   const categoryRef = useScrollReveal()
   const marqueeRef = useRef(null)
   const tentangRef = useScrollReveal()
 
   useEffect(() => {
+    // Ambil konten homepage (kategori + tentang)
+    fetch('/api/content')
+      .then(r => r.json())
+      .then(blocks => {
+        for (const b of blocks) {
+          if (b.key === 'kategori-pilihan') setCategories(b.data?.categories || [])
+          if (b.key === 'tentang-gaul') setTentang(b.data)
+        }
+      })
+      .catch(() => {})
+
     // Coba ambil produk featured dulu — fallback ke produk terbaru kalau kosong
     fetch('/api/products?featured=true&limit=8')
       .then(r => r.json())
@@ -62,7 +67,6 @@ export default function ShopPage() {
           setProducts(featured)
           setLoading(false)
         } else {
-          // Fallback ke produk terbaru
           fetch('/api/products?limit=8')
             .then(r2 => r2.json())
             .then(d2 => { setProducts(Array.isArray(d2) ? d2 : (d2.products || [])); setLoading(false) })
@@ -175,7 +179,7 @@ export default function ShopPage() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {categories.map((cat, i) => (
+              {(categories.length > 0 ? categories : []).map((cat, i) => (
                 <motion.div
                   key={cat.slug}
                   initial={{ opacity: 0, y: 30 }}
@@ -240,7 +244,7 @@ export default function ShopPage() {
             {/* Image side */}
             <div className="relative mb-10 aspect-[4/5] w-full overflow-hidden rounded-3xl lg:mb-0 lg:w-[45%]">
               <Image
-                src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=1000&fit=crop"
+                src={tentang?.image || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=1000&fit=crop'}
                 alt="Tentang GAUL"
                 fill
                 sizes="(max-width: 1024px) 100vw, 45vw"
@@ -252,24 +256,20 @@ export default function ShopPage() {
             {/* Text side */}
             <div className="flex-1 lg:max-w-lg">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--color-accent)]">
-                Cerita Kami
+                {tentang?.subtitle || 'Cerita Kami'}
               </p>
               <h2 className="font-[var(--font-display)] text-3xl tracking-tight text-[var(--color-text-primary)] sm:text-4xl lg:text-5xl">
-                Tentang GAUL
+                {tentang?.title || 'Tentang GAUL'}
               </h2>
               <p className="mt-6 text-lg leading-relaxed text-[var(--color-text-secondary)]">
-                GAUL lahir dari keyakinan bahwa outfit harian harusnya nggak
-                ribet — cukup nyaman, cukup stylish, dan cukup kamu.
+                {tentang?.paragraph1 || 'GAUL lahir dari keyakinan bahwa outfit harian harusnya nggak ribet — cukup nyaman, cukup stylish, dan cukup kamu.'}
               </p>
               <p className="mt-4 text-lg leading-relaxed text-[var(--color-text-secondary)]">
-                Koleksi kami dirancang untuk dipakai berulang, dicuci berulang,
-                dan tetap terasa sama fresh-nya. Tiap bulan, kami rilis koleksi
-                baru yang mengikuti ritme keseharian — bukan tren sesaat, tapi
-                basics yang bertahan.
+                {tentang?.paragraph2 || 'Koleksi kami dirancang untuk dipakai berulang, dicuci berulang, dan tetap terasa sama fresh-nya.'}
               </p>
               <div className="mt-8">
-                <Button href="/produk" variant="outline">
-                  Telusuri Koleksi
+                <Button href={tentang?.ctaLink || '/produk'} variant="outline">
+                  {tentang?.ctaText || 'Telusuri Koleksi'}
                 </Button>
               </div>
             </div>

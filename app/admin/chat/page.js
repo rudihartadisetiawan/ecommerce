@@ -241,7 +241,12 @@ export default function AdminChatPage() {
           })
           setConversations(prev => prev.map(c =>
             c.id === uid
-              ? { ...c, lastMessage: payload.data.text, lastTime: payload.data.time, unread: 0 }
+              ? {
+                  ...c,
+                  lastMessage: payload.data.text || c.lastMessage,
+                  lastTime: payload.data.time || c.lastTime,
+                  unread: activeIdRef.current === uid ? 0 : (c.unread || 0) + 1,
+                }
               : c
           ))
         } else if (payload.type === 'newConversation') {

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ImageUpload from '@/components/ui/ImageUpload'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 export default function AdminHeroPage() {
   const [heroItems, setHeroItems] = useState([])
+  const [confirmDelete, setConfirmDelete] = useState(null) // id banner yang akan dihapus
 
   const load = () => fetch('/api/hero?all=true').then(r => r.json()).then(setHeroItems).catch(() => {})
 
@@ -58,8 +60,8 @@ export default function AdminHeroPage() {
   }
 
   const remove = async (id) => {
-    if (!confirm('Hapus banner ini?')) return
     await fetch(`/api/hero/${id}`, { method: 'DELETE' })
+    setConfirmDelete(null)
     load()
   }
 
@@ -108,7 +110,7 @@ export default function AdminHeroPage() {
                 </div>
                 
                 <button 
-                  onClick={() => remove(item.id)} 
+                  onClick={() => setConfirmDelete(item.id)} 
                   className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
                 >
                   Hapus
@@ -154,6 +156,16 @@ export default function AdminHeroPage() {
           </div>
         ))}
       </div>
+
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Hapus banner?"
+        message="Banner akan dihapus permanen. Tindakan ini tidak bisa dibatalkan."
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        onConfirm={() => remove(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }
