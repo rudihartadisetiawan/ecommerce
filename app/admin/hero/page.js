@@ -7,7 +7,8 @@ import ConfirmModal from '@/components/ui/ConfirmModal'
 
 export default function AdminHeroPage() {
   const [heroItems, setHeroItems] = useState([])
-  const [confirmDelete, setConfirmDelete] = useState(null) // id banner yang akan dihapus
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmSave, setConfirmSave] = useState(null)
 
   const load = () => fetch('/api/hero?all=true').then(r => r.json()).then(setHeroItems).catch(() => {})
 
@@ -146,7 +147,7 @@ export default function AdminHeroPage() {
 
               <div className="sm:col-span-2 mt-2 flex justify-end">
                 <button 
-                  onClick={() => saveItem(item.id)} 
+                  onClick={() => setConfirmSave(item.id)} 
                   className="rounded-full bg-[var(--color-text-primary)] px-6 py-2.5 text-xs font-semibold text-white transition-all hover:brightness-125"
                 >
                   Simpan Perubahan
@@ -165,6 +166,16 @@ export default function AdminHeroPage() {
         cancelLabel="Batal"
         onConfirm={() => remove(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}
+      />
+
+      <ConfirmModal
+        open={!!confirmSave}
+        title="Simpan perubahan?"
+        message="Perubahan pada banner ini akan segera diterapkan di homepage."
+        confirmLabel="Simpan"
+        cancelLabel="Batal"
+        onConfirm={() => { const id = confirmSave; setConfirmSave(null); saveItem(id) }}
+        onCancel={() => setConfirmSave(null)}
       />
     </div>
   )
