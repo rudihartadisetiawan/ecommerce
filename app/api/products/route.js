@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { serializeProduct, serializeProductAdmin } from '@/lib/serialize'
+import { logAdminAction } from '@/lib/admin-log'
 import { z } from 'zod'
 
 export async function GET(request) {
@@ -71,7 +72,7 @@ const productSchema = z.object({
 })
 
 export async function POST(request) {
-  try { await requireAdmin() } catch (e) {
+  let session; try { session = await requireAdmin() } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.message === 'FORBIDDEN' ? 403 : 401 })
   }
   const body = await request.json()
@@ -90,6 +91,7 @@ export async function POST(request) {
         },
       })
     } catch {}
+    await logAdminAction(session, 'create_product', `Product: ${product.name} (#${product.id})`)
     return NextResponse.json(serializeProductAdmin(product), { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: 'SLUG_TAKEN' }, { status: 409 })

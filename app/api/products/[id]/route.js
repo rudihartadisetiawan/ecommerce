@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin, getSession } from '@/lib/session'
+import { logAdminAction } from '@/lib/admin-log'
 import { serializeProduct, serializeProductAdmin } from '@/lib/serialize'
 import { z } from 'zod'
 
@@ -35,7 +36,7 @@ const updateSchema = z.object({
 })
 
 export async function PUT(request, { params }) {
-  try { await requireAdmin() } catch (e) {
+  let session; try { session = await requireAdmin() } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.message === 'FORBIDDEN' ? 403 : 401 })
   }
   const { id } = await params
@@ -44,6 +45,7 @@ export async function PUT(request, { params }) {
   if (!parsed.success) return NextResponse.json({ error: 'INVALID', issues: parsed.error.issues }, { status: 400 })
   try {
     const product = await prisma.product.update({ where: { id: Number(id) }, data: parsed.data })
+    await logAdminAction(session, 'update_product', `Product: ${product.name} (#${product.id})`)
     return NextResponse.json(serializeProductAdmin(product))
   } catch (e) {
     if (e.code === 'P2025') return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
@@ -52,12 +54,13 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  try { await requireAdmin() } catch (e) {
+  let session; try { session = await requireAdmin() } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.message === 'FORBIDDEN' ? 403 : 401 })
   }
   const { id } = await params
   try {
     await prisma.product.delete({ where: { id: Number(id) } })
+    await logAdminAction(session, 'delete_product', `Product ID: ${id}`)
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })

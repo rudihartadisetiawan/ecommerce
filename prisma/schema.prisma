@@ -163,6 +163,17 @@ model Notification {
   sentAt  DateTime @default(now())
 }
 
+// AdminLog — catatan aktivitas admin (CRUD produk, pesanan, hero, konten, dll)
+model AdminLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  action    String   // misal: "create_product", "update_order_status", "delete_hero"
+  target    String   // misal: "Product: Linen Overshirt (#42)", "Order: ORD-abc123"
+  detail    String?  // informasi tambahan
+  createdAt DateTime @default(now())
+}
+
 // LoginLog — catatan login admin/super_admin
 model LoginLog {
   id        Int      @id @default(autoincrement())

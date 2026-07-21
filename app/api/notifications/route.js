@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin, getSession } from '@/lib/session'
 import { rateLimit } from '@/lib/rate-limit'
+import { logAdminAction } from '@/lib/admin-log'
 
 // GET /api/notifications — ambil notifikasi (global broadcast: new_collection, promo)
 // Semua user melihat notifikasi yang sama — ini adalah broadcast system, bukan per-user.
@@ -42,6 +43,8 @@ export async function POST(request) {
   const notif = await prisma.notification.create({
     data: { type, title, message, link: link || undefined },
   })
+
+  await logAdminAction(admin, 'create_notification', `Notif: ${notif.title} (#${notif.id})`)
 
   return NextResponse.json(notif, { status: 201 })
 }

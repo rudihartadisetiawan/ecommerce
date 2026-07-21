@@ -73,16 +73,29 @@ export default function AdminUsersPage() {
     setTimeout(() => setMsg(''), 4000)
   }
 
+  const [logFilter, setLogFilter] = useState('all') // 'all' | 'login' | 'activity'
+
   const toggleLogs = async () => {
     if (showLogs) { setShowLogs(false); return }
     if (!isSuperAdmin) return
     setLogsLoading(true)
     setShowLogs(true)
     try {
-      const res = await fetch('/api/admin/login-logs')
+      const res = await fetch(`/api/admin/login-logs?type=${logFilter}`)
       if (res.ok) setLoginLogs(await res.json())
     } catch {} finally { setLogsLoading(false) }
   }
+
+  useEffect(() => {
+    if (showLogs && isSuperAdmin) {
+      setLogsLoading(true)
+      fetch(`/api/admin/login-logs?type=${logFilter}`)
+        .then(r => r.json())
+        .then(d => { if (Array.isArray(d)) setLoginLogs(d) })
+        .catch(() => {})
+        .finally(() => setLogsLoading(false))
+    }
+  }, [logFilter, showLogs, isSuperAdmin])
 
   const handleChangeRole = async (userId, newRole) => {
     try {
@@ -223,7 +236,7 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      {/* Riwayat Login */}
+      {/* Log Aktivitas (Login + Admin Activity) */}
       {isSuperAdmin && (
         <div className="mt-8">
           <button
@@ -233,11 +246,32 @@ export default function AdminUsersPage() {
             <svg className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
-            Riwayat Login Staff
+            Log Aktivitas
           </button>
 
           {showLogs && (
             <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] shadow-sm">
+              {/* Filter tabs */}
+              <div className="flex gap-1 border-b border-[var(--color-bg-section)] bg-[var(--color-bg-warm)]/30 px-3 py-2">
+                {[
+                  { key: 'all', label: 'Semua' },
+                  { key: 'login', label: 'Login' },
+                  { key: 'activity', label: 'Aktivitas' },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setLogFilter(tab.key)}
+                    className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-colors ${
+                      logFilter === tab.key
+                        ? 'bg-[var(--color-text-primary)] text-white shadow-sm'
+                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
               {logsLoading ? (
                 <div className="p-6 text-center text-xs text-[var(--color-text-secondary)]">Memuat...</div>
               ) : (
@@ -245,32 +279,41 @@ export default function AdminUsersPage() {
                   <thead>
                     <tr className="border-b border-[var(--color-bg-section)] text-xs font-medium uppercase text-[var(--color-text-secondary)]">
                       <th className="px-4 py-3">Waktu</th>
-                      <th className="px-4 py-3">Nama</th>
-                      <th className="px-4 py-3">Role</th>
-                      <th className="px-4 py-3">IP</th>
+                      <th className="px-4 py-3">Admin</th>
+                      <th className="px-4 py-3">Tipe</th>
+                      <th className="px-4 py-3">Aksi</th>
+                      <th className="px-4 py-3">Target</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loginLogs.length === 0 ? (
-                      <tr><td colSpan={4} className="px-4 py-8 text-center text-xs text-[var(--color-text-secondary)]">Belum ada riwayat login.</td></tr>
-                    ) : loginLogs.map(l => (
-                      <tr key={l.id} className="border-b border-[var(--color-bg-section)]/50 last:border-0 hover:bg-[var(--color-bg-warm)]/50 transition-colors">
-                        <td className="px-4 py-2.5 whitespace-nowrap text-xs text-[var(--color-text-primary)] font-mono">
-                          {new Date(l.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' })}
-                        </td>
-                        <td className="px-4 py-2.5 text-xs font-medium text-[var(--color-text-primary)]">{l.name}</td>
-                        <td className="px-4 py-2.5">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
-                            l.role === 'super_admin'
-                              ? 'text-purple-700 bg-purple-50 border-purple-200'
-                              : 'text-blue-700 bg-blue-50 border-blue-200'
-                          }`}>
-                            {l.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)] font-mono">{l.ip || '—'}</td>
-                      </tr>
-                    ))}
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-xs text-[var(--color-text-secondary)]">Belum ada log.</td></tr>
+                    ) : loginLogs.map(l => {
+                      const isLogin = l.logType === 'login'
+                      return (
+                        <tr key={`${l.logType}-${l.id}`} className="border-b border-[var(--color-bg-section)]/50 last:border-0 hover:bg-[var(--color-bg-warm)]/50 transition-colors">
+                          <td className="px-4 py-2.5 whitespace-nowrap text-xs text-[var(--color-text-primary)] font-mono">
+                            {new Date(l.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' })}
+                          </td>
+                          <td className="px-4 py-2.5 text-xs font-medium text-[var(--color-text-primary)]">{l.name}</td>
+                          <td className="px-4 py-2.5">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
+                              isLogin
+                                ? 'text-green-700 bg-green-50 border-green-200'
+                                : 'text-blue-700 bg-blue-50 border-blue-200'
+                            }`}>
+                              {isLogin ? '🔑 Login' : '⚡ Aktivitas'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 text-xs font-medium text-[var(--color-text-primary)]">
+                            {isLogin ? 'Login' : (l.action || '—')}
+                          </td>
+                          <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)] max-w-[300px] truncate" title={l.target || l.detail || ''}>
+                            {isLogin ? (l.ip || '—') : (l.target || l.detail || '—')}
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               )}

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { z } from 'zod'
+import { logAdminAction } from '@/lib/admin-log'
 
 // S-07: Role hanya bisa admin atau customer — super_admin TIDAK bisa di-set via API
 const updateRoleSchema = z.object({
@@ -93,6 +94,8 @@ export async function POST(request) {
     },
   })
 
+  await logAdminAction(session, 'create_staff', `Staff: ${newUser.name} (${newUser.email})`)
+
   return NextResponse.json(
     {
       id: newUser.id,
@@ -121,6 +124,8 @@ export async function PUT(request) {
     data: { role },
     select: { id: true, name: true, email: true, role: true },
   })
+
+  await logAdminAction(session, 'update_user_role', `User ID: ${userId} → role: ${role}`)
 
   return NextResponse.json(updated)
 }

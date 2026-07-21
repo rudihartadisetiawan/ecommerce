@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { z } from 'zod'
+import { logAdminAction } from '@/lib/admin-log'
 
 // GET: ambil semua content block (public — dipakai homepage)
 // atau dengan query ?key=... untuk satu block
@@ -44,5 +45,6 @@ export async function PUT(req) {
   if (parsed.data.data) updateData.data = parsed.data.data
 
   const block = await prisma.contentBlock.update({ where: { key }, data: updateData })
+  await logAdminAction(auth, 'update_content', `Content block: ${key}`)
   return NextResponse.json(block)
 }

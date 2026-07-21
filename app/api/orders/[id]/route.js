@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin, getSession } from '@/lib/session'
 import { serializeOrder } from '@/lib/serialize'
+import { logAdminAction } from '@/lib/admin-log'
 
 export async function GET(request, { params }) {
   const { id } = await params
@@ -101,6 +102,9 @@ export async function PUT(request, { params }) {
       data: dataToUpdate,
       include: { items: { include: { product: true } } },
     })
+    if (isAdmin) {
+      await logAdminAction(session, 'update_order', `Order #${order.id}`, Object.keys(dataToUpdate).join(', '))
+    }
     return NextResponse.json(serializeOrder(order))
   } catch (e) {
     console.error('API Order PUT error:', e)
