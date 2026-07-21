@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ImageUpload from '@/components/ui/ImageUpload'
 import ConfirmModal from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 
 export default function AdminHeroPage() {
+  const addToast = useToast()
   const [heroItems, setHeroItems] = useState([])
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmSave, setConfirmSave] = useState(null)
@@ -44,9 +46,9 @@ export default function AdminHeroPage() {
       }),
     })
     if (res.ok) {
-      alert('Perubahan berhasil disimpan!')
+      addToast('✅ Perubahan berhasil disimpan!', 'success')
     } else {
-      alert('Gagal menyimpan perubahan.')
+      addToast('❌ Gagal menyimpan perubahan.', 'error')
     }
     load()
   }
@@ -172,7 +174,7 @@ export default function AdminHeroPage() {
         open={!!confirmSave}
         title="Simpan perubahan?"
         message="Perubahan pada banner ini akan segera diterapkan di homepage."
-        confirmLabel="Simpan"
+        confirmLabel="Ya, Simpan"
         cancelLabel="Batal"
         onConfirm={() => { const id = confirmSave; setConfirmSave(null); saveItem(id) }}
         onCancel={() => setConfirmSave(null)}
