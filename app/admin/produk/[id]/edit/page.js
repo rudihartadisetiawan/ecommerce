@@ -25,7 +25,22 @@ export default function EditProductPage() {
         setSizes(p.sizes || [])
         setColors(p.colors && p.colors.length ? p.colors : [])
         setImages(p.images || [])
-        setVariantStock(p.stockPerVariant || {})
+        // Auto-distribute stok ke varian jika stockPerVariant belum ada
+        let initialVariantStock = p.stockPerVariant || {}
+        if ((!initialVariantStock || Object.keys(initialVariantStock).length === 0) && p.stock > 0 && p.sizes?.length && p.colors?.length) {
+          initialVariantStock = {}
+          const combos = p.sizes.length * p.colors.length
+          const base = Math.floor(p.stock / combos)
+          let remainder = p.stock - base * combos
+          for (const s of p.sizes) {
+            for (const c of p.colors) {
+              const key = `${s}-${c.name || c}`
+              initialVariantStock[key] = base + (remainder > 0 ? 1 : 0)
+              if (remainder > 0) remainder--
+            }
+          }
+        }
+        setVariantStock(initialVariantStock)
         if (p.isFeatured !== undefined) setForm(f => ({ ...f, isFeatured: p.isFeatured }))
       }
       setLoaded(true)
