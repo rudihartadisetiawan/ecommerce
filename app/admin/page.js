@@ -93,24 +93,7 @@ export default function AdminProductsPage() {
     return counts
   }, [orders])
 
-  // ponytail: cost/profit pakai costPrice produk saat ini — akurat cukup untuk estimasi
-  const financeReport = useMemo(() => {
-    let totalCost = 0, totalRev = 0, itemCount = 0
-    orders.forEach(o => {
-      if (o.status !== 'paid' && o.status !== 'completed') return
-      totalRev += o.total || 0
-      ;(o.items || []).forEach(item => {
-        const p = products.find(x => x.id === (item.productId || item.product?.id))
-        if (p?.costPrice) totalCost += p.costPrice * (item.qty || 1)
-      })
-      itemCount += (o.items || []).length
-    })
-    const profit = totalRev - totalCost
-    const margin = totalRev > 0 ? (profit / totalRev) * 100 : 0
-    const avgOrderValue = orders.filter(o => o.status === 'paid' || o.status === 'completed').length
-      ? Math.round(totalRev / orders.filter(o => o.status === 'paid' || o.status === 'completed').length) : 0
-    return { totalCost, profit, margin: Math.round(margin * 10) / 10, avgOrderValue, totalRev }
-  }, [orders, products])
+
 
   const lowStockProducts = useMemo(() =>
     products.filter(p => p.isActive && p.stock <= 5 && p.stock > 0)
@@ -344,37 +327,7 @@ export default function AdminProductsPage() {
       )}
 
       {/* Analisis Keuangan — Khusus Super Admin */}
-      {isSuperAdmin && chartReady && orders.length > 0 && (
-        <div className="mb-6 rounded-2xl border border-purple-200 bg-purple-50/40 p-5 shadow-xs">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="text-lg">📊</span>
-            <h2 className="font-[var(--font-display)] text-lg text-[var(--color-text-primary)]">Analisis Keuangan</h2>
-            <span className="rounded-full bg-purple-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-800">Owner Only</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl bg-white p-4 shadow-xs">
-              <p className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">Total Revenue</p>
-              <p className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">Rp{financeReport.totalRev.toLocaleString('id-ID')}</p>
-            </div>
-            <div className="rounded-xl bg-white p-4 shadow-xs">
-              <p className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">Total Modal</p>
-              <p className="mt-1 text-lg font-bold text-red-600">Rp{financeReport.totalCost.toLocaleString('id-ID')}</p>
-            </div>
-            <div className="rounded-xl bg-white p-4 shadow-xs">
-              <p className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">Laba Kotor</p>
-              <p className={`mt-1 text-lg font-bold ${financeReport.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                Rp{financeReport.profit.toLocaleString('id-ID')}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-4 shadow-xs">
-              <p className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">Margin Laba</p>
-              <p className={`mt-1 text-lg font-bold ${financeReport.margin >= 20 ? 'text-emerald-600' : financeReport.margin >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
-                {financeReport.margin}%
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Low Stock Alert */}
       {chartReady && (lowStockProducts.length > 0 || outOfStockCount > 0) && (
@@ -444,8 +397,7 @@ export default function AdminProductsPage() {
               <th className="px-4 py-3">Produk</th>
               <th className="px-4 py-3">Kategori</th>
               <th className="px-4 py-3">Harga</th>
-              {isSuperAdmin && <th className="px-4 py-3">Modal</th>}
-              {isSuperAdmin && <th className="px-4 py-3">Margin</th>}
+
               <th className="px-4 py-3">Stok</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Featured</th>
@@ -454,7 +406,6 @@ export default function AdminProductsPage() {
           </thead>
           <tbody>
             {products.map(p => {
-              const marginPersen = p.costPrice > 0 ? Math.round((1 - p.costPrice / p.price) * 100) : null
               return (
               <tr key={p.id} className="border-b border-[var(--color-bg-section)]/50 last:border-0">
                 <td className="px-4 py-3">
@@ -467,16 +418,7 @@ export default function AdminProductsPage() {
                 </td>
                 <td className="px-4 py-3 text-[var(--color-text-secondary)]">{p.category}</td>
                 <td className="px-4 py-3 text-[var(--color-text-primary)]">Rp{p.price.toLocaleString('id-ID')}</td>
-                {isSuperAdmin && <td className="px-4 py-3 text-[var(--color-text-secondary)]">Rp{(p.costPrice || 0).toLocaleString('id-ID')}</td>}
-                {isSuperAdmin && (
-                  <td className="px-4 py-3">
-                    {marginPersen !== null ? (
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${marginPersen >= 40 ? 'bg-emerald-50 text-emerald-600' : marginPersen >= 20 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500'}`}>
-                        {marginPersen}%
-                      </span>
-                    ) : <span className="text-xs text-[var(--color-text-secondary)]">—</span>}
-                  </td>
-                )}
+
                 <td className="px-4 py-3 text-[var(--color-text-secondary)]">{p.stock}</td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggleActive(p.id)} className={`rounded-full px-3 py-1 text-xs font-medium ${p.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>{p.isActive ? 'Aktif' : 'Nonaktif'}</button>

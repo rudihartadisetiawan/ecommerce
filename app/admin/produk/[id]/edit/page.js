@@ -8,7 +8,7 @@ import ImageUpload from '@/components/ui/ImageUpload'
 export default function EditProductPage() {
   const { id } = useParams()
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', price: '', costPrice: '', category: 'Atasan', stock: '', description: '', isActive: true })
+  const [form, setForm] = useState({ name: '', price: '', category: 'Atasan', stock: '', description: '', isActive: true })
   const [sizes, setSizes] = useState([])
   const [colors, setColors] = useState([])
   const [colorName, setColorName] = useState('')
@@ -21,7 +21,7 @@ export default function EditProductPage() {
   useEffect(() => {
     fetch(`/api/products/${id}`).then(r => r.json()).then(p => {
       if (p?.id) {
-        setForm({ name: p.name, price: String(p.price), costPrice: String(p.costPrice || ''), category: p.category, stock: String(p.stock), description: p.description, isActive: p.isActive })
+        setForm({ name: p.name, price: String(p.price), category: p.category, stock: String(p.stock), description: p.description, isActive: p.isActive })
         setSizes(p.sizes || [])
         setColors(p.colors && p.colors.length ? p.colors : [])
         setImages(p.images || [])
@@ -98,7 +98,7 @@ export default function EditProductPage() {
         name: form.name,
         slug: form.name.toLowerCase().replace(/\s+/g, '-'),
         price: Number(form.price),
-        costPrice: Number(form.costPrice) || 0,
+
         category: form.category,
         sizes,
         colors,
@@ -130,10 +130,6 @@ export default function EditProductPage() {
           <div>
             <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Harga Jual</label>
             <input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} required className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Harga Modal</label>
-            <input type="number" value={form.costPrice} onChange={e => setForm(p => ({ ...p, costPrice: e.target.value }))} className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
           </div>
           <div>
             <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Kategori</label>

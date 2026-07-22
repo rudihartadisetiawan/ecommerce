@@ -7,7 +7,7 @@ import ImageUpload from '@/components/ui/ImageUpload'
 
 export default function AddProductPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', price: '', costPrice: '', category: 'Atasan', stock: '', description: '', isFeatured: false })
+  const [form, setForm] = useState({ name: '', price: '', category: 'Atasan', stock: '', description: '', isFeatured: false })
   const [sizes, setSizes] = useState([])
   const [colors, setColors] = useState([])
   const [colorName, setColorName] = useState('')
@@ -62,7 +62,6 @@ export default function AddProductPage() {
         slug: form.name.toLowerCase().replace(/\s+/g, '-'),
         description: form.description,
         price: Number(form.price),
-        costPrice: Number(form.costPrice) || 0,
         category: form.category,
         sizes,
         colors: colors.length ? colors : [{ name: 'Default', hex: '#CCCCCC' }],
@@ -92,10 +91,6 @@ export default function AddProductPage() {
           <div>
             <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Harga Jual</label>
             <input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} required className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Harga Modal</label>
-            <input type="number" value={form.costPrice} onChange={e => setForm(p => ({ ...p, costPrice: e.target.value }))} className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]" />
           </div>
           <div>
             <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Kategori</label>

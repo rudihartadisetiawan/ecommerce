@@ -61,7 +61,6 @@ const productSchema = z.object({
   slug: z.string().min(1),
   description: z.string().default(''),
   price: z.number().int().nonnegative(),
-  costPrice: z.number().int().nonnegative().default(0),
   category: z.string().min(1),
   sizes: z.array(z.string()).default([]),
   colors: z.array(colorSchema).default([]),

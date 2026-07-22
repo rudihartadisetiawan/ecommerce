@@ -8,7 +8,7 @@ describe('serialize.js', () => {
       expect(serializeProduct(undefined)).toBe(null)
     })
 
-    it('serializes a full product correctly (public — NO costPrice)', async () => {
+    it('serializes a full product correctly', async () => {
       const { serializeProduct } = await import('../lib/serialize.js')
       const input = {
         id: 1,
@@ -16,7 +16,6 @@ describe('serialize.js', () => {
         slug: 'overshirt-flanel',
         description: 'Deskripsi produk',
         price: 150000,
-        costPrice: 75000,
         category: 'Atasan',
         sizes: ['M', 'L', 'XL'],
         colors: [{ name: 'Red', hex: '#FF0000' }],
@@ -33,7 +32,6 @@ describe('serialize.js', () => {
       expect(result.name).toBe('Overshirt Flanel')
       expect(result.slug).toBe('overshirt-flanel')
       expect(result.price).toBe(150000)
-      expect(result.costPrice).toBeUndefined() // S-01: publik TIDAK boleh lihat costPrice
       expect(result.category).toBe('Atasan')
       expect(result.sizes).toEqual(['M', 'L', 'XL'])
       expect(result.colors).toEqual([{ name: 'Red', hex: '#FF0000' }])
@@ -62,27 +60,8 @@ describe('serialize.js', () => {
       expect(result.sizes).toEqual([])
       expect(result.colors).toEqual([])
       expect(result.stock).toBe(0)
-      expect(result.costPrice).toBeUndefined() // S-01: publik TIDAK boleh lihat costPrice
       expect(result.stockPerVariant).toBe(null)
       expect(result.isFeatured).toBe(false)
-    })
-
-    it('serializeProductAdmin includes costPrice', async () => {
-      const { serializeProductAdmin } = await import('../lib/serialize.js')
-      const input = {
-        id: 5,
-        name: 'Admin Product',
-        slug: 'admin-product',
-        description: '',
-        price: 200000,
-        costPrice: 100000,
-        category: 'Atasan',
-        isActive: true,
-      }
-      const result = serializeProductAdmin(input)
-      expect(result.id).toBe(5)
-      expect(result.costPrice).toBe(100000) // Admin serializer harus include costPrice
-      expect(result.name).toBe('Admin Product')
     })
 
     it('serializeProductAdmin returns null for null input', async () => {

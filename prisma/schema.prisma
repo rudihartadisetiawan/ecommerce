@@ -52,7 +52,6 @@ model Product {
   slug        String   @unique
   description String   @db.Text
   price       Int
-  costPrice   Int      @default(0)      // harga modal untuk kalkulasi laba
   category    String
   sizes       Json
   colors      Json

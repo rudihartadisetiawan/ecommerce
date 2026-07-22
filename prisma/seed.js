@@ -125,17 +125,14 @@ async function main() {
   })
 
   for (const p of products) {
-    // ponytail: costPrice ~55% dari harga jual sebagai estimasi modal
-    const costPrice = p.costPrice ?? Math.round(p.price * 0.55 / 1000) * 1000
     await prisma.product.upsert({
       where: { slug: p.slug },
-      update: { costPrice, images: p.images },
+      update: { images: p.images },
       create: {
         name: p.name,
         slug: p.slug,
         description: p.desc,
         price: p.price,
-        costPrice,
         category: p.cat,
         sizes: p.sizes,
         colors: p.colors,
