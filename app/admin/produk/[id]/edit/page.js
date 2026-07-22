@@ -70,7 +70,10 @@ export default function EditProductPage() {
           stockPerVariant[key] = Number(variantStock[key]) || 0
         }
       }
-      totalStock = Object.values(stockPerVariant).reduce((a, b) => a + b, 0)
+      const hasVariantValues = Object.values(stockPerVariant).some(v => v > 0)
+      if (hasVariantValues) {
+        totalStock = Object.values(stockPerVariant).reduce((a, b) => a + b, 0)
+      }
     }
 
     const res = await fetch(`/api/products/${id}`, {
