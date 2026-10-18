@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { useCart } from '@/lib/cart-context'
 import { useState } from 'react'
 import ConfirmModal from '@/components/ui/ConfirmModal'
@@ -16,56 +16,96 @@ const links = [
 
 export default function AccountNav() {
   const path = usePathname()
+  const { data: session } = useSession()
   const { clearCart } = useCart()
   const [confirmLogout, setConfirmLogout] = useState(false)
 
-  return (
-    <nav className="space-y-1">
-      {/* Kembali ke Toko */}
-      <Link
-        href="/"
-        className="mb-3 flex items-center gap-2 rounded-xl border border-dashed border-[var(--color-text-secondary)]/20 px-4 py-2.5 text-xs font-medium text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
-      >
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-        </svg>
-        Kembali ke Toko
-      </Link>
+  const name = session?.user?.name || 'Member'
+  const initial = name.charAt(0).toUpperCase()
 
-      {links.map(l => {
-        const active = path === l.href
-        return (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
-              active
-                ? 'bg-[var(--color-text-primary)] text-white shadow-sm'
-                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-section)] hover:text-[var(--color-text-primary)]'
-            }`}
-          >
-            {l.icon(active)}
-            {l.label}
-          </Link>
-        )
-      })}
-      <button
-        onClick={() => setConfirmLogout(true)}
-        className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-red-400 transition-all hover:bg-red-50 hover:text-red-500"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-        </svg>
-        Keluar
-      </button>
+  const submitLogout = () => {
+    setConfirmLogout(false)
+    clearCart()
+    signOut({ callbackUrl: '/' })
+  }
+
+  return (
+    <nav>
+      {/* Mobile: strip identitas kompak agar konten tidak turun terlalu jauh */}
+      <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] px-3 py-2.5 lg:hidden">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-accent)]/15 font-[var(--font-display)] text-base text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]/30">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{name}</p>
+          <p className="truncate text-xs text-[var(--color-text-secondary)]">{session?.user?.email}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setConfirmLogout(true)}
+          aria-label="Keluar"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-section)] hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-warm)]"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Desktop: kartu member penuh */}
+      <div className="hidden rounded-2xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] p-4 lg:block">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-accent)]/15 font-[var(--font-display)] text-lg text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]/30">
+            {initial}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{name}</p>
+            <p className="truncate text-xs text-[var(--color-text-secondary)]">{session?.user?.email}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setConfirmLogout(true)}
+          className="mt-3 flex w-full items-center gap-2 border-t border-[var(--color-bg-section)] pt-3 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-red-500 focus-visible:outline-none focus-visible:text-red-500"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+          </svg>
+          Keluar
+        </button>
+      </div>
+
+      {/* Navigasi: tab horizontal scrollable di mobile, kolom di desktop */}
+      <p className="mb-2 mt-6 hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-text-secondary)] lg:block">
+        Menu
+      </p>
+      <div className="no-scrollbar -mx-1 mt-3 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:mt-0 lg:flex-col lg:overflow-visible lg:px-0">
+        {links.map(l => {
+          const active = path === l.href
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all lg:w-full ${
+                active
+                  ? 'bg-[var(--color-text-primary)] text-white shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-section)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              {l.icon(active)}
+              {l.label}
+            </Link>
+          )
+        })}
+      </div>
 
       <ConfirmModal
         open={confirmLogout}
         title="Yakin keluar?"
-        message="Anda akan logout dari akun Anda."
+        message="Kamu akan keluar dari akun kamu."
         confirmLabel="Keluar"
         cancelLabel="Batal"
-        onConfirm={() => { setConfirmLogout(false); clearCart(); signOut({ callbackUrl: '/' }) }}
+        onConfirm={submitLogout}
         onCancel={() => setConfirmLogout(false)}
       />
     </nav>

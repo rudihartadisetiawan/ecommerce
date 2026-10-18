@@ -43,6 +43,10 @@ export async function POST(request) {
 
     return NextResponse.json(result)
   } catch (e) {
-    return NextResponse.json({ error: 'MIDTRANS_ERROR', message: e.message }, { status: 502 })
+    console.error('[midtrans create-transaction]', order.id, String(e?.message || e))
+    return NextResponse.json(
+      { error: 'MIDTRANS_ERROR', message: 'Gagal membuat tagihan pembayaran di Midtrans. Coba lagi.' },
+      { status: 502 },
+    )
   }
 }

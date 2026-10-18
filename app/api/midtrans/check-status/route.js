@@ -22,14 +22,20 @@ export async function POST(request) {
   }
 
   const { searchParams } = new URL(request.url)
-  const forcePaid = searchParams.get('force') === 'paid'
+  // force=paid HANYA untuk demo lokal: wajib Midtrans sandbox + opt-in env ALLOW_TEST_PAYMENT.
+  // Production diabaikan — customer tidak bisa menandai sendiri pesanan lunas.
+  const forcePaid =
+    searchParams.get('force') === 'paid' &&
+    process.env.MIDTRANS_IS_PRODUCTION !== 'true' &&
+    process.env.ALLOW_TEST_PAYMENT === 'true' &&
+    Boolean(order.snapToken)
 
   try {
     const snap = snapClient()
     const status = await snap.transaction.status(orderId)
 
     const newStatus = mapTransactionStatus(status.transaction_status)
-    // Fallback: jika forcePaid=true dan Midtrans masih pending (sandbox), paksa jadi paid
+    // Sandbox: webhook tidak masuk di localhost — forcePaid boleh menaikkan pending → paid
     const finalStatus = newStatus === 'pending' && forcePaid ? 'paid' : newStatus
 
     if (finalStatus && finalStatus !== order.status) {
@@ -47,14 +53,22 @@ export async function POST(request) {
 
     return NextResponse.json({ status: order.status, updated: false })
   } catch (e) {
-    // Fallback: jika Midtrans error dan forcePaid=true, set paid optimistically
-    if (forcePaid && order.status === 'pending') {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'paid' },
-      })
-      return NextResponse.json({ status: 'paid', updated: true })
-    }
-    return NextResponse.json({ error: 'MIDTRANS_ERROR', message: e.message }, { status: 502 })
+    // Tidak ada force-paid di jalur error — eksploit 404 (transaksi tak ada) harus tetap ditolak
+    const raw = String(e?.message || e)
+    console.error(`[midtrans check-status] ${orderId}:`, raw)
+    const notFound = raw.includes('404') || /doesn't exist/i.test(raw)
+    return NextResponse.json(
+      notFound
+        ? {
+            error: 'TX_NOT_FOUND',
+            message:
+              'Transaksi belum ditemukan di Midtrans. Tagihan pembayaran belum pernah dibuat untuk pesanan ini — minta pembeli klik "Bayar Sekarang", atau transaksi sudah kedaluwarsa.',
+          }
+        : {
+            error: 'MIDTRANS_ERROR',
+            message: 'Midtrans sedang tidak dapat dihubungi. Coba lagi beberapa saat lagi.',
+          },
+      { status: notFound ? 404 : 502 },
+    )
   }
 }

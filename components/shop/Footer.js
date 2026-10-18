@@ -44,38 +44,37 @@ export default function Footer() {
       <div className="border-b border-white/10 px-6 py-10 sm:py-14">
         <Container>
           <div className="mx-auto max-w-xl text-center">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/40">
-              Newsletter
+            <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--color-accent)]">
+              PRIVATE DISPATCH / SUBSCRIBER
             </p>
             <h3 className="font-[var(--font-display)] text-2xl text-white sm:text-3xl">
-              Dapatkan Info Koleksi Terbaru
+              Akses Rilisan Sebelum Publik
             </h3>
-            <p className="mt-2 text-sm text-white/50">
-              Daftar untuk mendapat notifikasi koleksi baru dan promo spesial
-              langsung di email kamu.
+            <p className="mt-2 text-sm text-white/60">
+              Dapatkan notifikasi drop artikel bulanan, batch restock terbatas, dan editorial rilis langsung ke email Anda.
             </p>
             <form onSubmit={handleNewsletter} className="mx-auto mt-6 flex max-w-md gap-2">
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="email@example.com"
-                className="flex-1 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/40"
+                placeholder="nama@email.com"
+                className="flex-1 rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-[var(--color-accent)]"
               />
               <button
                 type="submit"
-                className="shrink-0 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-all hover:brightness-110"
+                className="shrink-0 rounded-lg bg-white px-5 py-2.5 font-mono text-xs uppercase tracking-wider text-[var(--color-text-primary)] transition-all hover:bg-[var(--color-accent)] hover:text-white"
               >
-                Daftar
+                Gabung
               </button>
             </form>
             {newsletterStatus === 'success' && (
-              <p className="mt-3 text-xs text-green-400">
-                ✓ Berhasil terdaftar! Kami akan mengirim notifikasi ke email kamu.
+              <p className="mt-3 font-mono text-xs text-green-400">
+                ✓ Berhasil terdaftar. Anda masuk dalam antrean notifikasi drop berikutnya.
               </p>
             )}
             {newsletterStatus === 'error' && (
-              <p className="mt-3 text-xs text-red-400">
+              <p className="mt-3 font-mono text-xs text-red-400">
                 Gagal menyimpan. Coba lagi.
               </p>
             )}
@@ -92,9 +91,8 @@ export default function Footer() {
               <Link href="/" className="font-[var(--font-display)] text-2xl text-white">
                 GAUL
               </Link>
-              <p className="mt-4 max-w-xs text-sm leading-relaxed">
-                Outfit harian yang dirancang untuk dipakai berulang — nyaman,
-                stylish, dan tetap kamu.
+              <p className="mt-4 max-w-xs text-xs leading-relaxed text-white/60">
+                Dirancang untuk rotasi pakaian harian — siluet rileks, serat katun padat, dan ketahanan pakai jangka panjang.
               </p>
             </div>
 

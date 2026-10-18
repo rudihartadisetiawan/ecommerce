@@ -9,6 +9,15 @@ current_focus: owner-reporting-features
 > Manager baca file ini di awal sesi. Update section domain yang sedang dikerjakan
 > di akhir tiap sesi/sebelum handoff.
 
+### Redesain Homepage (Konsep Editorial Nikben)
+- **Tahap (a) Selesai**: Token Desain + Header + Announcement Bar
+  - File: `app/globals.css`, `components/ui/Button.js`, `components/shop/Navigation.js`
+  - Token warna: Latar putih/off-white (`#FFFFFF` / `#FAFAF8`), teks hitam (`#111111`), tanpa aksen warna di seksi konten.
+  - Tombol: Varian solid hitam dengan hover invert (putih dengan border hitam), sudut rectangular bersih (`rounded-xs`).
+  - Announcement bar: Tinggi 36px, latar hitam pekat `#111111`, teks kecil tengah uppercase tracking lega (`0.22em`).
+  - Header: Logo kiri serif ("GAUL"), menu tengah sans-serif bold uppercase (`text-[12px] tracking-[0.18em]`), ikon kanan rapi (Search, Wishlist, Akun, Keranjang dengan badge hitam minimalis). Sticky dengan border bawah 1px tipis. Drawer mobile putih bersih minimalis.
+- **Tahap Berikutnya**: Tahap (b) Hero Section (Full-bleed foto, multi-banner fade, tanpa trio thumbnail kanan bawah).
+
 ## Status Ringkas
 | Domain | Status | Progress |
 |---|---|---|---|---|
@@ -704,7 +713,7 @@ Dari analisis gap bisnis, owner (super_admin) butuh visibility ke **laba** (buka
 | 5 | **Form Edit Produk** | `app/admin/produk/[id]/edit/page.js` — load & simpan `costPrice` |
 | 6 | **Seed — costPrice otomatis** | `prisma/seed.js` — tiap produk dapat `costPrice = ~55% harga jual`, di-upsert ke existing |
 | 7 | **Dashboard — Analisis Keuangan (super_admin only)** | `app/admin/page.js` — 4 kartu: Total Revenue, Total Modal, Laba Kotor, Margin Laba. Dihitung dari costPrice produk × qty terjual. |
-| 8 | **Dashboard — Low Stock Alert** | `app/admin/page.js` — peringatan stok kritis (≤5): jumlah produk habis + 6 produk stok menipis, link cepat ke edit. Warna merah untuk stok ≤2. |
+| 8 | **Dashboard — Low Stock Alert** | `app/admin/page.js` — peringatan stok hampir habis (≤5): jumlah produk habis + 6 produk stok menipis, link cepat ke edit. Warna merah untuk stok ≤2. |
 | 9 | **Dashboard — Top Pelanggan** | `app/admin/page.js` — top 5 pelanggan berdasarkan jumlah pesanan, dengan total belanja. |
 | 10 | **Dashboard — Kolom Modal & Margin di Tabel Produk (super_admin only)** | `app/admin/page.js` — tambah kolom "Modal" (harga modal) + "Margin" (persentase laba) dengan badge warna (hijau ≥40%, kuning ≥20%, merah <20%). |
 
@@ -972,5 +981,286 @@ Temuan baru dari audit keamanan menyeluruh yang mencakup kupon, guest checkout, 
 | **Konfirmasi simpan Hero** | Tombol "Simpan Perubahan" di hero section sekarang munculkan ConfirmModal dulu. |
 | **Toast notifikasi** | Ganti semua `alert()` di hero & konten page dengan `useToast()` — animasi Framer Motion, auto-hilang 3 detik. |
 
+### 8. Hapus costPrice (Harga Modal) — seluruh aplikasi
+
+| Perubahan | Detail |
+|-----------|--------|
+| `prisma/schema.prisma` | Hapus field `costPrice` dari model Product |
+| Migrasi `remove_cost_price` | `ALTER TABLE product DROP COLUMN costPrice` |
+| `lib/serialize.js` | Hapus `serializeProductAdmin()` — kini sama dengan `serializeProduct()` |
+| `app/api/products/route.js` | Hapus `costPrice` dari Zod schema POST |
+| `app/api/products/[id]/route.js` | Hapus `costPrice` dari Zod schema PUT |
+| `app/admin/produk/add/page.js` | Hapus field & input "Harga Modal" |
+| `app/admin/produk/[id]/edit/page.js` | Hapus field & input "Harga Modal" |
+| `app/admin/page.js` | Hapus section "Analisis Keuangan" (4 kartu) + kolom Modal & Margin di tabel produk |
+| `prisma/seed.js` | Hapus perhitungan & upsert costPrice |
+| `tests/serialize.test.js` | Hapus test costPrice |
+
 **Build**
 ✅ 46+ routes, 0 error
+
+---
+
+## Sesi 2026-09-21 — Fix Unique Keys + Fix toLocaleString TypeError + Login Hydration Fix + Loading Skeletons & Spinners + Widescreen Layout Fix
+
+### 1. Fix React Unique Key Prop Warning (CatalogPage)
+- **Problem**: Warning `Each child in a list should have a unique "key" prop` di CatalogPage (`app/(shop)/produk/page.js`).
+- **Fix**:
+  - `app/(shop)/produk/page.js`: Menambahkan index fallback unik pada `filtered.map` (`prod-${product.id}-${index}`) dan `recentlyViewed.map` (`rv-${p.id}-${index}`). Menambahkan `.filter(Boolean)` pada `categories` useMemo.
+  - `components/shop/ProductCard.js`: Menggunakan `key={hex ? `${hex}-${index}` : `color-${index}`}` untuk dot warna produk dan menangani format string vs objek.
+  - `components/shop/FilterSidebar.js`: Menggunakan `key={cat || `cat-${index}`}` pada kategori filter.
+  - `components/shop/SearchBar.js`: Memperbaiki parsing array data API dan menambahkan `key={p.id ? `sg-${p.id}-${index}` : `sg-${index}`}` pada saran pencarian.
+
+### 2. Fix TypeError `toLocaleString` on Undefined (ProductDetailPage)
+- **Problem**: `TypeError: Cannot read properties of undefined (reading 'toLocaleString')` pada `formatPrice` di `app/(shop)/produk/[slug]/page.js`.
+- **Fix**:
+  - Menambahkan pengecekan tipe data `if (typeof price !== 'number') return 'Rp0'` pada fungsi `formatPrice`.
+  - Menangani respon error 404 dari API (`if (!d || d.error || !d.id)`).
+  - Menambahkan fallback aman `(item.price ?? 0).toLocaleString('id-ID')` di `components/shop/CartItem.js`.
+
+### 3. Fix SuperAdmin Login Delay (Hydration / Redirect Stuck)
+- **Problem**: Login superadmin/admin tertahan di status "Memuat..." pada `AdminLayout`.
+- **Fix**:
+  - Mengganti `router.push('/admin')` dengan `window.location.href = targetUrl` pada `app/account/login/page.js` dan `app/account/register/page.js` agar cookie JWT ter-hydrate penuh di browser.
+
+### 4. Implementasi Animasi Loading & Skeleton Loaders Komprehensif
+- **`components/ui/Skeleton.js`**: Menambahkan komponen `OrderSkeleton`, `TableRowSkeleton`, dan `NotificationSkeleton`.
+- **`components/ui/Button.js`**: Menambahkan prop `loading` dengan SVG spinner putar dan disabled state.
+- **`app/account/login/page.js` & `register/page.js`**: Tombol submit menampilkan spinner dan status "Memproses...".
+- **`app/account/orders/page.js`**: Menampilkan `OrderSkeleton` saat fetch data pesanan dari API.
+- **`app/account/orders/[id]/page.js`**: Menampilkan detail skeleton layout saat memuat status & rincian pesanan.
+- **`components/shop/SearchBar.js`**: Spinner mini SVG aktif saat rekomendasi produk di-fetch dari API.
+- **`components/shop/NotificationBell.js`**: Menampilkan `NotificationSkeleton` pada dropdown notifikasi.
+
+### 5. Fix Layout Margin Kiri-Kanan (Widescreen Fluid Layout)
+- **Problem**: Kontainer pembatas `max-w-7xl` (1280px) menyebabkan marjin kosong mati (*dead space*) di monitor desktop lebar, sehingga logo `GAUL CMS` dan tabel admin terlalu ke tengah.
+- **Fix**:
+  - `components/ui/Container.js`: Menaikkan batas lebar kontainer toko ke `max-w-[1600px]` dengan padding responsif `px-4 sm:px-8 lg:px-12`.
+  - `app/admin/layout.js`: Header `GAUL CMS` diperluas ke `max-w-[1600px]`, memindahkan brand `GAUL CMS` ke pojok kiri layar yang presisi.
+  - Halaman CMS (`page.js`, `pesanan`, `users`, `pelanggan`, `chat`): Diperluas ke `max-w-[1600px]` untuk pengalaman visual widescreen yang maksimal.
+
+### Build & Verification
+✅ `npm run build`: **0 error**, 49 routes prerendered / dynamic.
+
+---
+
+## Sesi 2026-09-22 — Admin CMS Redesign (Dashboard, Produk, Chat) + Varian Per-Ukuran + Stok Hampir Habis
+
+### 1. Redesign Dashboard Admin (`app/admin/page.js`)
+- **Sebelum**: stat cards biru/violet gradient, emoji di greeting, avatar pelangi, tabel produk campur di dashboard.
+- **Sesudah**: kartu putih seragam dengan aksen warm (`#D4A373`), greeting tanpa emoji, eyebrow section labels (Ringkasan/Analitik/Katalog), header date pill, avatar monokrom.
+- Tabel produk DIPINDAH ke halaman Produk terpisah; handler produk (toggleActive/toggleFeatured/remove/ConfirmModal) dihapus dari dashboard.
+
+### 2. Pisah Dashboard & Kelola Produk (nav CMS)
+- `app/admin/produk/page.js` (BARU): tabel produk + search (nama/kategori/ID) + filter pills ber-counter (Semua/Aktif/Nonaktif/Stok Hampir Habis/Habis) + toggle Aktif/Featured + Edit/Hapus dengan ConfirmModal.
+- `app/admin/layout.js`: nav split jadi **Dashboard** (`/admin`) dan **Produk** (`/admin/produk`); fix active-state — `/admin` exact match, sisanya `path.startsWith(item.href)` agar sub-route add/edit ikut highlight "Produk".
+
+### 3. Rename "Stok Kritis" → "Stok Hampir Habis"
+- Diterapkan konsisten di `app/admin/page.js` (stat card), `app/admin/produk/page.js` (filter pill), dan `PROGRESS.md` (log). Konteks "temuan kritis" (security) dibiarkan.
+
+### 4. Form Produk Redesign Full-CMS (Add & Edit)
+- `app/admin/produk/add/page.js`: layout 2 kolom — kiri (Informasi Dasar, Varian, Gambar, Deskripsi via `SectionCard`), kanan sticky (Publikasi: Aktif/Featured toggle + ringkasan varian & stok, lalu tombol Simpan/Batal). Eyebrow header + back link ke `/admin/produk`.
+- `app/admin/produk/[id]/edit/page.js`: redesain identik dengan add page. Konversi data existing (`sizes` × `colors` × `stockPerVariant`) → struktur per-ukuran; jika `stockPerVariant` kosong, auto-distribusi stok total ke semua kombinasi (perilaku lama dipertahankan). Nav fix ke `/admin/produk`.
+
+### 5. Simplifikasi Input Varian — Per-Ukuran (bukan matriks global)
+- **Sebelum**: daftar warna global + matriks Size×Warna. (User: "warnanya bisa beda per ukuran" — matriks sulit dipakai.)
+- **Sesudah**: `SizeVariantEditor` per ukuran — tiap ukuran punya list warna sendiri (nama + color picker hex + input stok). Mendukung warna berbeda per ukuran.
+- **Format payload tetap backward-compatible** (vektor order/checkout tidak berubah):
+  - `sizes` = daftar size terpilih
+  - `colors` = union warna dari semua size (untuk swatch toko)
+  - `stockPerVariant` = `{ size-colorName: stock }`
+  - `stock` = total semua stok varian
+
+### 6. Live Chat Admin Responsif (`app/admin/chat/page.js`)
+- Palette `var(--color-*)` diganti hex warm (matching redesain CMS).
+- Responsif mobile: dropdown list percakapan ↔ panel chat (state `mobileOpenChat`, tombol kembali tampil hanya di mobile).
+- "CS Online Active" pill → "Online" pill; indikator online dihapus total (user menilai tidak perlu).
+- Fix link kartu produk: `/products/[slug]` → `/produk/[slug]`.
+- `app/globals.css`: +`@utility no-scrollbar` (untuk row template).
+
+### 7. Hapus Hardcoded Online Status (`app/api/chat/route.js`)
+- `online: true` dihapus dari response chat; argumen `online` dicabut dari `ConvAvatar`, indikator titik hijau dihapus. (Sistem presence CS di ChatWidget customer via `/api/chat/admin-status` tetap utuh — sistem terpisah.)
+
+### Verifikasi
+- Parse check (Babel, plugin jsx) ✅ untuk semua file yang diubah: `page.js`, `chat/page.js`, `produk/page.js`, `produk/add/page.js`, `produk/[id]/edit/page.js`, `admin/layout.js`, `api/chat/route.js`.
+- `next lint` tidak dipakai (rusak di environment ini — pakai Babel parse check).
+
+---
+
+## Sesi 2026-09-22 — Dashboard: Delta Omset + AOV + Recent Orders
+
+### Request
+Dashboard terasa "simpel" — owner ingin langsung paham kondisi bisnis saat lihat dashboard.
+
+### Implementasi (`app/admin/page.js`)
+- **Kinerja Bulan Ini (super_admin)**: kartu baru "Omset Bulan Ini" dengan delta % vs bulan lalu (badge hijau naik / merah turun) + mini bar chart 6 bulan di dalam kartu.
+- **AOV**: kartu "Rata-rata Nilai Order" (paid+completed) + insight otomatis (nilai order tinggi vs ajakan bundling/ongkir) berdasar ambang Rp200rb.
+- **Pesanan Terbaru**: section 6 order terbaru (avatar inisial, nama, ID, jumlah item, metode bayar, waktu relatif, total, badge status) + link "Lihat Semua" ke `/admin/pesanan`.
+- **Fix Top Pelanggan**: `serializeOrder` tidak pernah menampilkan `userId`/`userName` sehingga key kelompok selalu undefined → Top Pelanggan tidak pernah render. Perbaikan: expose `userId`/`userName` di `lib/serialize.js`, `include: { user: true }` di `app/api/orders/route.js`, grup key fallback ke `g{orderId}` utk guest + nama diambil dari `shippingAddress`.
+
+### Verifikasi
+- Parse check (Babel) ✅: `app/admin/page.js`, `lib/serialize.js`, `app/api/orders/route.js`.
+
+
+---
+
+## Sesi 2026-09-22 � Demo Data 1 Tahun ("Bisnis sudah berjalan setahun")
+
+### Request
+Web terasa kosong (tanpa data). Owner ingin seolah-olah toko sudah berjalan �1 tahun: riwayat order, pelanggan, ulasan, chat, log staff, kupon, dan kondisi stok yang masuk akal.
+
+### Implementasi (`prisma/seed-demo.js` + script npm baru)
+- **`db:seed:demo`** (npm): `node prisma/seed-demo.js`, WAJIB `npm run db:seed` dulu (butuh 50 produk + admin). Idempoten: hapus data demo (order, ulasan, wishlist, chat, notifikasi, log, kupon, user customer) lalu bangun ulang.
+- **PRNG deterministik** (mulberry32 seed 987654321) ? hasil seeding reproducible di setiap run.
+- **42 pelanggan** (password `password123`), 1/3 baru daftar, 2/3 tersebar dalam 3�12 bulan.
+- **342 order 12 bulan** dengan tren naik (8 ? 54 order/bulan). Status oleh umur order (lama ? completed/cancelled, baru ? pending/paid/processing/shipped). Variant size+warna acak, qty 1�2, ongkir 78%, 15% checkout guest, metode pembayaran + nama kurir untuk order berongkir, paymentRef & tracking number utk status terbayar/terkirim.
+- **122 ulasan** (~35% order selesai), rating berbobot 5/4/3/2, muncul 2�10 hari setelah order.
+- **Wishlist** ~55% pelanggan (1�4 produk), **notifikasi** (koleksi baru tiap produk ke-4 � proporsional 50 produk, cart promo/garis besar), **chat CS 5 percakapan** (2 unread), **log admin & login staff** 12 bulan, **4 kupon** (GAUL10, HEMAT20, ONGKIR0 kedaluwarsa, RAMADHAN15 nonaktif).
+- **Stok produk** = stok asli + 99 (restock) - jumlah terjual, di-clamp 0�120; `cotton-tee` dijaga = 18 (dipakai E2E & hero); sebagian produk dipaksa menipis/abis (0 stock) agar dashboard "Stok Hampir Habis" hidup; `isFeatured` + `stockPerVariant: null` diset.
+
+### Hasil di DB
+50 produk, 42 pelanggan, 342 order (58 guest, 25 cancelled), 122 ulasan, 18 chat. Omset paid+completed berfluktuasi realistis (Rp13,6jt � Rp46,4jt/bulan), 13 order perlu diproses, 6 produk stok menipis (3 di antaranya stock 0).
+
+### Verifikasi
+- Parse check OK: `prisma/seed-demo.js` (Babel parser).
+- `npm run db:seed` ? 50 produk; `node prisma/seed-demo.js` ? ringkasan akhir tercetak.
+- Query verifikasi: omset/bulan naik-turun, stok menipis 6, guest 58, nama user 284/342.
+- Catatan: E2E `admin-flow.spec.js` masih menunggu h1 "Kelola Produk" pertama di `/admin` � sudah tidak cocok sejak dashboard-redesign (h1 "Dashboard"). Perlu update test bila e2e dijalankan.
+
+---
+
+## Sesi 2026-09-22 � Bugfix: Filter Kategori Koleksi Tidak Konsisten
+
+### Gejala
+"Kadang ada beberapa produk/kategori yang tidak muncul sesuai sort Terbaru/Termurah/Termahal."
+
+### Akar masalah (2 bug)
+1. Daftar kategori sidebar dihitung dari `products` yang sedang dimuat (12/halaman, `app/(shop)/produk/page.js:80`). Saat sort atau pagination berubah, kategori yang tampil ikut berubah ? kategori "hilang".
+2. `category` hanya dikirim ke API saat `filters.categories.length === 1` (`page.js:42`). Multi-kategori tidak difilter di server maupun client ? hasil tak konsisten.
+
+### Perbaikan
+- `app/api/products/route.js`: dukung daftar kategori `category=a,b,c` ? `category: { in: [...] }`; tambah `?only=categories` untuk daftar kategori distinct (independen sort/pagination, `distinct: ['category']`).
+- `app/(shop)/produk/page.js`: fetch daftar kategori lengkap sekali dari `/api/products?only=categories`; sidebar memakai daftar tersebut (fallback ke kategori dari produk termuat). Kirim `category` = `filters.categories.join(',')` saat ada pilihan kategori. Hapus double-filter client-side search (API sudah handle `q`), ukuran & rentang harga tetap client filter.
+- Verifikasi: parse OK (Babel) kedua file; query distinct menghasilkan 5 kategori: Aksesoris, Atasan, Bawahan, Outerwear, Sepatu.
+
+---
+
+## Sesi 2026-09-22 � RBAC: Sembunyikan Nominal dari Role Admin (Staff)
+
+### Permasalahan
+3 role (customer / admin / super_admin). Keputusan: role `admin` (staff) hanya perlihatkan
+info operasional (status, stok, produk, aktivitas pesanan) � nominal finansial milik
+`super_admin` (owner) saja. Semula nominal bocor ke staff di beberapa tempat.
+
+### Temuan & Perbaikan
+- `app/api/orders/route.js` (GET all): staff (`role === 'admin'`) menerima order dgn
+  `total: null, paymentRef: null` (S-23). Owner & pemilik pesanan tetap dapat nominal.
+- `app/api/orders/[id]/route.js` (GET & PUT): masking sama untuk staff; owner/pemilik pesanan tetap utuh.
+- `app/admin/page.js` dashboard:
+  - Bar chart "Penjualan 6 Bulan" ? hanya super_admin (finansial).
+  - Top Customers (totalSpent) ? hanya super_admin.
+  - Recent orders ? jika `total` null tampil "Diakses Super Admin".
+  - Donut "Status Pesanan" (operasional) tetap utuh utk semua, full-width saat staff.
+- `app/admin/pesanan/page.js`: kolom Total tampil "Nominal � Super Admin" saat `total` null (juga mencegah crash `.toLocaleString` pd null).
+- Export CSV sudah super_admin-only sejak awal � tidak diubah.
+
+### Verifikasi
+- Parse check (Babel): `app/api/orders/route.js`, `app/api/orders/[id]/route.js`, `app/admin/page.js`, `app/admin/pesanan/page.js`.
+- `app/api/midtrans/check-status` hanya melepas `status` (tanpa nominal) � aman utk staff.
+- Data demo tetap valid (342 order, total terisi).
+
+---
+
+## Sesi 2026-09-22 � Dashboard: Barchart "Penjualan Setahun" (12 Bulan)
+
+### Request
+"Bagian barchart sebaiknya menggunakan grafik saja dan yang ditampilkan selama setahun."
+
+### Implementasi (`app/admin/page.js`)
+- `monthlySales` diubah dari 6 bulan menjadi 12 bulan terakhir (index 0�11). `revenueThisMonth` ? `monthlySales[11]`, `revenueLastMonth` ? `monthlySales[10]`.
+- Barchart utama (Analitik, super_admin): judul "Penjualan Setahun", sub "Total omset (paid + completed) � 12 bulan terakhir", 12 bar, label&gap diperkecil, bar terakhir aksen `#D4A373`, nilai hover tetap tampil (mis. "1.2jt").
+- Mini bar di kartu "Omset Bulan Ini" tetap 6 bulan terakhir (`monthlySales.slice(-6)`), bukan hardcode index.
+
+### Verifikasi
+- Parse check (Babel) OK pada `app/admin/page.js`.
+- Query DB: 12 bulan terisi penuh dengan omset (Rp11jt � Rp46jt), rentang Okt 2025 s/d Sep 2026.
+
+---
+
+## Sesi 2026-09-22 � Dashboard: Barchart ? Line Chart 12 Bulan
+
+### Request
+"Gunakan linechart yang menarik" (mengganti barchart setahun yang baru dibuat).
+
+### Implementasi (`app/admin/page.js`)
+- Komponen baru `SalesLineChart` (SVG custom, tanpa library chart):
+  - Kurva halus Catmull-Rom ? Bezier melewati tiap titik.
+  - Area gradient `#D4A373` fade ke transparan + stroke `#D4A373` 2.5px.
+  - Animasi framer-motion: area fade-in + line pathLength draw (1.1s).
+  - Grid horizontal + label sumbu-Y dalam "jt", sumbu-X 12 bulan.
+  - Tooltip native per titik (nilai Rp penuh), titik terakhir diperbesar dgn aksen warna (bulan berjalan).
+  - Kaki chart: rentang tahun/bulan + total omset setahun.
+- Slot barchart di "Penjualan Setahun" (super_admin) diganti dengan `<SalesLineChart data={monthlySales} />`.
+- Mini bar (Omset Bulan Ini) tetap � tidak diubah.
+
+### Verifikasi
+- Parse check (Babel) OK.
+- Edge case max=0 (belum ada transaksi) tetap aman (ticks dijamin = 2).
+
+---
+
+## Sesi 2026-10-07 - Perbaikan UI/UX Halaman Akun (/account/*)
+
+### Request
+Perbaikan menyeluruh UI/UX 4 halaman akun: shared layout & sidebar, header seragam,
+profile minimalis-putih, orders (tabs + badge warna + hover), wishlist (grid + tambah/hapus),
+notifications (read/unread, relative time, grup, filter, pagination, badge "Berakhir").
+
+### Implementasi
+- `app/account/layout.js`: `pt-16 pb-24 sm:pt-20 sm:pb-28` (pt = tinggi nav fixed h-16/h-20;
+  pb-24/28 agar ChatWidget bottom-6 tak menutupi konten). Backlink `mb-4`.
+- `components/shop/AccountNav.js`: kartu member kini tampil di SEMUA halaman akun (menu tak
+  bergeser). Mobile: strip identitas kompak (avatar + nama + email + tombol keluar ikon) `lg:hidden`,
+  navigasi tab horizontal scrollable `no-scrollbar`. Desktop: kartu full + kolom menu.
+- `components/ui/FilterTabs.js` (BARU): pill tab horizontal scrollable, role=tablist, count optional,
+  active = ink pill, focus-visible ring.
+- `app/account/profile/page.js`: PageHeader (eyebrow AKUN + h1 "Profil" + deskripsi + border-b),
+  blok ringkas identitas (nama - email - "Bergabung {bulan tahun}"), section "Data Diri" + 2 input
+  (Nama, No. HP) validasi inline: Nama min 2 karakter, No. HP format Indonesia
+  `/^(?:08\d{8,11}|\+628\d{8,11})$/` 10-13 digit. Email read-only "disabled" (bg-section,
+  cursor-not-allowed, ikon lock, hint CS). Dirty state "Ada perubahan belum disimpan"/"Tidak ada
+  perubahan", tombol "Batalkan", submit disabled readable
+  (`disabled:bg-bg-section disabled:text-secondary`), spinner, toast, focus-visible ring, reduced-motion,
+  ProfileSkeleton baru. Fix import `useSession` (typo useSessionSafe).
+- `app/account/orders/page.js`: baris = tumpukan thumbnail produk + kode mono GAUL- + tanggal +
+  jumlah item + total + badge status + chevron; badge warna (pending=kuning, paid=sky,
+  processing=blue, shipped=ungu, completed=hijau, cancelled=merah); FilterTabs
+  Semua/Belum Bayar/Diproses/Dikirim/Selesai + count; hover lift+shadow; klik seluruh baris;
+  empty state "Belum ada pesanan" + CTA "Mulai Belanja"; empty state per-filter.
+- `components/shop/WishlistCard.js` (BARU): gambar aspect-3/4 hover scale, tombol hati hapus
+  (via POST /api/wishlist toggle), badge "Stok Habis", "Tambah ke Keranjang" (addItem variant pertama
+  + toast; TODO backend utk pemilihan variant penuh).
+- `app/account/wishlist/page.js`: grid 2 kolom mobile / 3-4 desktop, stagger animation, badge "N Item",
+  empty state ramping + CTA "Jelajahi Koleksi"; teks "kamu".
+- `app/account/notifications/page.js` (rework besar): mock read (baca otomatis >2 hari) & expiry promo
+  (>14 hari = badge "Berakhir") di client + TODO backend (enum type belum punya `order`, belum ada
+  field `read`/`expiresAt`); relative time + full date di title; grup "Hari ini"/"Minggu ini"/
+  "Sebelumnya"; unread (dot accent + judul bold) vs read (konter pudar); "Tandai semua sudah dibaca (N)";
+  FilterTabs Semua/Promo/Koleksi/Pesanan; "Muat lebih banyak" (8 per halaman); badge "X Notifikasi";
+  item produk dihapus -> "Produk tidak tersedia" (non-clickable); NotificationSkeleton.
+- `app/globals.css`: `html { scrollbar-gutter: stable; }` (cegah loncatan layout badge "X Notifikasi").
+- `app/account/orders/[id]/page.js`: "Anda" -> "kamu" (5 titik).
+
+### Verifikasi (SKIP_RATE_LIMIT=1)
+- check-profile.js (baru): 41/41 PASS (header baru, email disabled, validasi, dirty, batalkan,
+  save+sync sidebar, reload persist, reduced-motion, mobile tanpa overflow, konten tak terlalu ke bawah).
+- check-account-pages.js (baru): 49/49 PASS (orders row + badge warna via canvas lab->rgb + tabs,
+  wishlist add/cart/remove, notifications groups/relative/mark-all/pagination/tabs, stub route utk
+  badge Berakhir & produk-hilang, 0 pageerror).
+- Vitest: 63/63 PASS. Playwright e2e: 18/18 PASS.
+- `npm run lint` belum bisa dijalankan (next lint dihapus di Next 16, tak ada tsconfig) - pre-existing.
+
+### Catatan dev (flake Turbopack)
+Computed warna Tailwind v4 = `lab(...)` (bukan rgb) -> konversi pakai canvas 1x1 getImageData.
+`page.evaluate` di tengah flow kadang kena "execution context destroyed" akibat HMR kompilasi
+on-demand -> warm-up endpoint + retry helper pada skrip verifikasi.

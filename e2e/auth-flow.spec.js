@@ -60,6 +60,6 @@ test.describe('Auth Flow', () => {
     // Now navigate to admin dashboard — session cookie should be set
     await page.goto('/admin', { waitUntil: 'networkidle' })
     // Check we're on admin page (expect heading)
-    await expect(page.locator('h1').first()).toContainText('Kelola Produk', { timeout: 5000 })
+    await expect(page.locator('h1').first()).toContainText('Dashboard', { timeout: 5000 })
   })
 })

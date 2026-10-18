@@ -1,4 +1,4 @@
-import { chatBus } from '@/lib/chat-bus'
+import { chatBus, incrementAdminOnline, decrementAdminOnline } from '@/lib/chat-bus'
 import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -26,6 +26,7 @@ export async function GET(request) {
       }
 
       send({ type: 'connected' })
+      incrementAdminOnline()
 
       unsubscribe = chatBus.subscribe((payload) => {
         if (payload?.type === 'message') {
@@ -49,12 +50,14 @@ export async function GET(request) {
       request.signal.addEventListener('abort', () => {
         clearInterval(heartbeat)
         unsubscribe?.()
+        decrementAdminOnline()
         try { controller.close() } catch {}
       })
     },
     cancel() {
       clearInterval(heartbeat)
       unsubscribe?.()
+      decrementAdminOnline()
     },
   })
 

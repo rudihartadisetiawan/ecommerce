@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import AuthShell from '@/components/ui/AuthShell'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -29,9 +30,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-bg-warm)] px-4">
-      <Link href="/" className="mb-8 font-[var(--font-display)] text-2xl text-[var(--color-text-primary)]">GAUL</Link>
-      <div className="w-full max-w-sm rounded-2xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] p-8 shadow-sm">
+    <AuthShell>
+      <div className="rounded-2xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] p-8 shadow-sm">
         {sent ? (
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
               </svg>
             </div>
-            <h1 className="text-sm font-semibold text-[var(--color-text-primary)]">Cek Email Kamu</h1>
+            <h1 className="font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">Cek Email Kamu</h1>
             <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
               Kalau email {email} terdaftar, kami sudah kirim link reset password.
             </p>
@@ -49,7 +49,8 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <>
-            <h1 className="text-sm font-semibold text-[var(--color-text-primary)]">Lupa Password</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">Akun</p>
+            <h1 className="mt-1.5 font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">Lupa Password</h1>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Masukkan email untuk menerima link reset.</p>
             {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-500">{error}</p>}
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -75,6 +76,6 @@ export default function ForgotPasswordPage() {
           </>
         )}
       </div>
-    </div>
+    </AuthShell>
   )
 }

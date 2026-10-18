@@ -19,7 +19,12 @@ export async function GET(request, { params }) {
   const isAdmin = session.user.role === 'admin' || session.user.role === 'super_admin'
   if (!isOwner && !isAdmin) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
-  return NextResponse.json(serializeOrder(order))
+  // S-23: Staff (role admin) tidak melihat nominal — hanya owner / pemilik pesanan
+  let result = serializeOrder(order)
+  if (!isOwner && session.user.role === 'admin') {
+    result = { ...result, total: null, paymentRef: null }
+  }
+  return NextResponse.json(result)
 }
 
 export async function PUT(request, { params }) {
@@ -105,7 +110,11 @@ export async function PUT(request, { params }) {
     if (isAdmin) {
       await logAdminAction(session, 'update_order', `Order #${order.id}`, Object.keys(dataToUpdate).join(', '))
     }
-    return NextResponse.json(serializeOrder(order))
+    let result = serializeOrder(order)
+    if (session.user.role === 'admin') {
+      result = { ...result, total: null, paymentRef: null }
+    }
+    return NextResponse.json(result)
   } catch (e) {
     console.error('API Order PUT error:', e)
     return NextResponse.json({ error: e.message || 'UPDATE_FAILED' }, { status: 500 })

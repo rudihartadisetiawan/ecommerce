@@ -113,3 +113,17 @@ npm run dev
 ---
 
 **Dibuat dengan:** Next.js 16 · React 19 · Prisma · MySQL · Midtrans · GSAP · Framer Motion · Tailwind CSS v4 · Playwright · Vitest
+
+1. 👑 Super Admin (Owner)
+Email: owner@gaul.com
+Password: owner123
+Role: super_admin
+Akses: Penuh (Dashboard Admin, Produk, Pesanan, Chat Inbox, Banner Hero, Kupon, Konten, dan Kelola Staf Admin /admin/users).
+2. 🛠️ Admin Staff
+Email: admin@gaul.com
+Password: admin123
+Role: admin
+Akses: CMS Admin (Kelola Produk, Pesanan, Resi/Cetak Label, Live Chat Inbox, Hero, Kupon).
+3. 🛒 Customer (Pembeli)
+Daftar Baru: Anda bisa membuat akun customer baru langsung melalui halaman register di /account/register.
+Lupa Password Customer: Bisa mereset password di halaman /account/forgot-password.

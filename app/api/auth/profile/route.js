@@ -8,6 +8,19 @@ const schema = z.object({
   phone: z.string().optional(),
 })
 
+export async function GET() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+
+  const user = await prisma.user.findUnique({
+    where: { id: Number(session.user.id) },
+    select: { name: true, email: true, phone: true, createdAt: true },
+  })
+  if (!user) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
+
+  return NextResponse.json(user)
+}
+
 export async function PUT(request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })

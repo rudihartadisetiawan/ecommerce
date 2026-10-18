@@ -44,8 +44,8 @@ export default function FilterSidebar({
       <div>
         <h4 className="mb-3 text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">Kategori</h4>
         <div className="space-y-2">
-          {categories.map((cat) => (
-            <label key={cat} className="flex cursor-pointer items-center gap-3 text-sm text-[var(--color-text-primary)]">
+          {categories.map((cat, index) => (
+            <label key={cat || `cat-${index}`} className="flex cursor-pointer items-center gap-3 text-sm text-[var(--color-text-primary)]">
               <input
                 type="checkbox"
                 checked={filters.categories.includes(cat)}

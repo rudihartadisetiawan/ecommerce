@@ -1,13 +1,19 @@
 @import "tailwindcss";
 
+/* Kompat: Tailwind v4 tak meng-generate font-[var(--font-display)] tanpa type hint.
+   Rule unlayered ini menambal semua pemakaian lama di seluruh situs. */
+.font-\[var\(--font-display\)\] {
+  font-family: var(--font-display);
+}
+
 @theme {
-  --color-bg-warm: #FAFAF7;
-  --color-bg-section: #F0EDE6;
+  --color-bg-warm: #FFFFFF;
+  --color-bg-section: #FAFAF8;
   --color-surface: #FFFFFF;
-  --color-text-primary: #1C1C1A;
-  --color-text-secondary: #6B655A;
-  --color-accent: #D4A373;
-  --color-accent-dark: #B8874F;
+  --color-text-primary: #111111;
+  --color-text-secondary: #767676;
+  --color-accent: #111111;
+  --color-accent-dark: #000000;
 
   --font-display: "DM Serif Display", serif;
   --font-body: "DM Sans", sans-serif;
@@ -20,6 +26,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* sembunyikan lompatan layout saat scrollbar muncul/hilang (mis. badge "X Notifikasi") */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -31,6 +39,14 @@ body {
 ::selection {
   background-color: var(--color-accent);
   color: #fff;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Scrollbar — subtle */

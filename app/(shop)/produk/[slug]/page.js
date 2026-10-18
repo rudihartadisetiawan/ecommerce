@@ -16,6 +16,7 @@ import { addRecentlyViewed } from '@/lib/recently-viewed'
 import ImageMagnifier from '@/components/ui/ImageMagnifier'
 
 function formatPrice(price) {
+  if (typeof price !== 'number') return 'Rp0'
   return `Rp${price.toLocaleString('id-ID')}`
 }
 
@@ -44,6 +45,11 @@ export default function ProductDetailPage() {
     fetch(`/api/products/slug/${slug}`)
       .then(r => r.json())
       .then(d => {
+        if (!d || d.error || !d.id) {
+          setProduct(null)
+          setLoading(false)
+          return
+        }
         setProduct(d)
         setLoading(false)
         addRecentlyViewed(d)

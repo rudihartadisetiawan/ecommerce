@@ -4,16 +4,25 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 
-export default function CartItem({ item, onUpdateQty, onRemove }) {
+export default function CartItem({ item, stock = null, onUpdateQty, onRemove }) {
+  const outOfStock = stock !== null && stock === 0
+  const exceedStock = stock !== null && stock < (item.qty ?? 1)
+  const atMax = stock !== null && (item.qty ?? 1) >= stock
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
-      className="flex gap-4 border-b border-[var(--color-bg-section)] py-5"
+      className={`flex gap-4 border-b border-[var(--color-bg-section)] py-5 ${outOfStock || exceedStock ? 'opacity-60' : ''}`}
     >
-      <Link href={`/produk/${item.slug}`} className="h-24 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-section)] sm:h-28 sm:w-24">
-        <Image src={item.image} alt={item.name} width={200} height={240} className="h-full w-full object-cover" />
+      <Link href={`/produk/${item.slug}`} className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-section)] sm:h-28 sm:w-24">
+        <Image src={item.image} alt={item.name} width={200} height={240} className={`h-full w-full object-cover ${outOfStock ? 'grayscale' : ''}`} />
+        {outOfStock && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[10px] font-bold uppercase tracking-wider text-white">
+            Habis
+          </span>
+        )}
       </Link>
 
       <div className="flex flex-1 flex-col justify-between">
@@ -25,19 +34,24 @@ export default function CartItem({ item, onUpdateQty, onRemove }) {
             {item.size} {item.colorName ? `· ${item.colorName}` : ''} / <span className="inline-block h-3 w-3 rounded-full align-middle" style={{ backgroundColor: item.color }} />
           </p>
           <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">
-            Rp{item.price.toLocaleString('id-ID')}
+            Rp{(item.price ?? 0).toLocaleString('id-ID')}
           </p>
+          {(outOfStock || exceedStock) && (
+            <p className="mt-1 text-xs font-semibold text-red-500">
+              {outOfStock ? 'Stok habis — hapus item agar bisa checkout' : `Stok tersisa hanya ${stock} — kurangi jumlah`}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 rounded-full border border-[var(--color-text-secondary)]/20">
             <button onClick={() => onUpdateQty(item.id, item.qty - 1)} className="flex h-8 w-8 items-center justify-center text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]" disabled={item.qty <= 1}>−</button>
             <span className="min-w-[24px] text-center text-sm font-medium">{item.qty}</span>
-            <button onClick={() => onUpdateQty(item.id, item.qty + 1)} className="flex h-8 w-8 items-center justify-center text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">+</button>
+            <button onClick={() => onUpdateQty(item.id, item.qty + 1)} className="flex h-8 w-8 items-center justify-center text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]" disabled={outOfStock || atMax} title={atMax ? `Maksimal ${stock}` : ''}>+</button>
           </div>
           <div className="flex items-center gap-3">
             <p className="text-sm font-medium text-[var(--color-text-primary)]">
-              Rp{(item.price * item.qty).toLocaleString('id-ID')}
+              Rp{((item.price ?? 0) * (item.qty ?? 1)).toLocaleString('id-ID')}
             </p>
             <button onClick={() => onRemove(item.id)} className="text-xs text-[var(--color-text-secondary)] hover:text-red-500">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">

@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev --name init",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
+    "db:seed:demo": "node prisma/seed-demo.js",
     "db:studio": "prisma studio"
   },
   "prisma": {

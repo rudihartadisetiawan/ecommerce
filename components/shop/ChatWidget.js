@@ -1,12 +1,18 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
+
+// ponytail: halaman auth — chat disembunyikan agar tidak mengganggu form login/registrasi.
+const hiddenPaths = ['/account/login', '/account/register']
 
 // ponytail: wrapper kecil — hanya 1 hook, return null atau render ChatWidget. Mencegah hooks mismatch.
 export function ChatWidgetWrapper() {
   const { data: session, status } = useSession()
+  const pathname = usePathname()
+  if (hiddenPaths.includes(pathname)) return null
   if (status !== 'authenticated' || (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin')) {
     return <ChatWidget />
   }
@@ -177,6 +183,7 @@ export default function ChatWidget() {
   const [inputText, setInputText] = useState('')
   const [unreadCount, setUnreadCount] = useState(1)
   const [isAdminTyping, setIsAdminTyping] = useState(false)
+  const [adminOnline, setAdminOnline] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const messagesEndRef = useRef(null)
   const typingTimeoutRef = useRef(null)
@@ -196,6 +203,22 @@ export default function ChatWidget() {
       }
     } catch {}
   }, [status])
+
+  // ponytail: poll admin online status — setiap 30 detik + saat mount.
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await fetch('/api/chat/admin-status')
+        if (res.ok) {
+          const data = await res.json()
+          setAdminOnline(!!data.online)
+        }
+      } catch {}
+    }
+    check()
+    const interval = setInterval(check, 30_000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Poll — fetch messages WITHOUT prepending mock greeting (mencegah duplikasi)
   const pollMessages = useCallback(async () => {
@@ -419,14 +442,23 @@ export default function ChatWidget() {
               <div className="flex items-center gap-3">
                 <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-xs font-bold text-white shadow-inner">
                   CS
-                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-[var(--color-text-primary)]" />
+                  <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--color-text-primary)] transition-colors duration-500 ${
+                    adminOnline ? 'bg-green-400' : 'bg-gray-400'
+                  }`} />
                 </div>
                 <div>
                   <h3 className="text-xs font-semibold">GAUL Customer Support</h3>
-                  <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Online · Siap Membantu
-                  </p>
+                  {adminOnline ? (
+                    <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Online · Siap Membantu
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-400" />
+                      Offline · Respon maks. 1×24 jam
+                    </p>
+                  )}
                 </div>
               </div>
               <button

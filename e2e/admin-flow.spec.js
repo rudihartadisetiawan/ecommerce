@@ -18,7 +18,7 @@ async function loginAsAdmin({ page }) {
 test.describe('Admin CMS Pages', () => {
   test('navigate to admin login and access CMS', async ({ page }) => {
     await loginAsAdmin({ page })
-    await expect(page.locator('h1').first()).toContainText('Kelola Produk')
+    await expect(page.locator('h1').first()).toContainText('Dashboard')
   })
 
   test('admin orders page loads', async ({ page }) => {

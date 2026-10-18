@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useCart } from '@/lib/cart-context'
+import useStockMap from '@/lib/use-stock'
 import Navigation from '@/components/shop/Navigation'
 import CartItem from '@/components/shop/CartItem'
 import Container from '@/components/ui/Container'
@@ -13,7 +14,17 @@ export default function CartPage() {
   const { items, removeItem, updateQty, subtotal } = useCart()
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { stockFor, loading: stockLoading } = useStockMap(items)
   const total = subtotal
+
+  const stockOf = {}
+  let hasProblem = false
+  let problemCount = 0
+  for (const i of items) {
+    const s = stockFor(i)
+    stockOf[i.id] = s
+    if (s !== null && (s === 0 || s < (i.qty ?? 1))) { hasProblem = true; problemCount++ }
+  }
 
   // ponytail: admin tidak punya akses ke cart
   const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin'
@@ -53,9 +64,15 @@ export default function CartPage() {
 
           <div className="lg:flex lg:gap-10">
             <div className="flex-1">
+              {stockLoading && (
+                <p className="mb-3 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+                  Mengecek stok...
+                </p>
+              )}
               <AnimatePresence>
                 {items.map(item => (
-                  <CartItem key={item.id} item={item} onUpdateQty={updateQty} onRemove={removeItem} />
+                  <CartItem key={item.id} item={item} stock={stockOf[item.id]} onUpdateQty={updateQty} onRemove={removeItem} />
                 ))}
               </AnimatePresence>
             </div>
@@ -77,12 +94,26 @@ export default function CartPage() {
                     <span>Rp{total.toLocaleString('id-ID')}</span>
                   </div>
                 </div>
-                <Link
-                  href="/checkout"
-                  className="mt-6 flex w-full items-center justify-center rounded-full bg-[var(--color-text-primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:brightness-125"
-                >
-                  Checkout
-                </Link>
+
+                {hasProblem ? (
+                  <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-600">
+                    {problemCount} item {problemCount > 1 ? 'tidak bisa' : 'tidak bisa'} diproses karena stok habis.
+                    Hapus item yang bermasalah atau kurangi jumlahnya.
+                  </div>
+                ) : stockLoading ? (
+                  <div className="mt-5 rounded-xl bg-[var(--color-surface)] px-4 py-3 text-xs text-[var(--color-text-secondary)]">
+                    Memeriksa ketersediaan stok...
+                  </div>
+                ) : null}
+
+                {!hasProblem && (
+                  <Link
+                    href="/checkout"
+                    className="mt-5 flex w-full items-center justify-center rounded-full bg-[var(--color-text-primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:brightness-125"
+                  >
+                    Checkout
+                  </Link>
+                )}
               </div>
             </div>
           </div>

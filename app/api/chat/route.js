@@ -51,7 +51,6 @@ export async function GET(request) {
           ? new Date(lastMsg.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
           : '',
         unread: unreadCount,
-        online: true,
       }
     })
 

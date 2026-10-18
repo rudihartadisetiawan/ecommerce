@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 const quickReplies = [
-  'Stok ready kak, silakan langsung di-checkout sebelum kehabisan! 😊',
+  'Stok ready kak, silakan langsung di-checkout sebelum kehabisan!',
   'Estimasi pengiriman 2-3 hari kerja untuk wilayah Jabodetabek.',
   'Untuk BB 68kg TB 175cm kami sarankan ukuran L agar fit oversized yang pas.',
 ]
@@ -22,7 +22,7 @@ function TypingDots() {
       {[0, 1, 2].map(i => (
         <motion.span
           key={i}
-          className="h-1.5 w-1.5 rounded-full bg-[var(--color-text-secondary)]"
+          className="h-1.5 w-1.5 rounded-full bg-current"
           animate={{ y: [0, -3, 0] }}
           transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
         />
@@ -71,29 +71,34 @@ function ProductPickerModal({ open, onClose, onPick }) {
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         >
-          <div className="flex items-center justify-between border-b border-[var(--color-bg-section)] p-4">
-            <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Pilih Produk untuk Dibagikan</h3>
-            <button onClick={onClose} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="flex items-center justify-between border-b border-[#EEEBE4] p-4">
+            <h3 className="text-sm font-semibold text-[#1C1C1A]">Pilih Produk untuk Dibagikan</h3>
+            <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9C9589] hover:bg-[#F5F4F1] hover:text-[#1C1C1A] transition-colors">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="border-b border-[var(--color-bg-section)] p-3">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              autoFocus
-              placeholder="Cari produk berdasarkan nama..."
-              className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-[var(--color-bg-warm)]/50 px-4 py-2.5 text-xs outline-none focus:border-[var(--color-accent)]"
-            />
+          <div className="border-b border-[#EEEBE4] p-3">
+            <div className="relative">
+              <svg className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#9C9589]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
+              </svg>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+                placeholder="Cari produk berdasarkan nama..."
+                className="w-full rounded-xl border border-[#EEEBE4] bg-[#FAFAF9] py-2.5 pl-10 pr-4 text-xs outline-none focus:border-[#D4A373] focus:bg-white"
+              />
+            </div>
           </div>
           <div className="max-h-[400px] overflow-y-auto p-3">
             {loading ? (
-              <p className="py-8 text-center text-xs text-[var(--color-text-secondary)]">Mencari produk…</p>
+              <p className="py-8 text-center text-xs text-[#9C9589]">Mencari produk…</p>
             ) : results.length === 0 ? (
-              <p className="py-8 text-center text-xs text-[var(--color-text-secondary)]">Tidak ada produk ditemukan</p>
+              <p className="py-8 text-center text-xs text-[#9C9589]">Tidak ada produk ditemukan</p>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {results.map(p => {
@@ -102,17 +107,17 @@ function ProductPickerModal({ open, onClose, onPick }) {
                     <button
                       key={p.id}
                       onClick={() => onPick(p)}
-                      className="group flex flex-col items-stretch overflow-hidden rounded-xl border border-[var(--color-bg-section)] bg-white text-left transition-all hover:border-[var(--color-accent)] hover:shadow-md"
+                      className="group flex flex-col items-stretch overflow-hidden rounded-xl border border-[#EEEBE4] bg-white text-left transition-all hover:border-[#D4A373] hover:shadow-md"
                     >
-                      <div className="aspect-square w-full overflow-hidden bg-[var(--color-bg-section)]">
+                      <div className="aspect-square w-full overflow-hidden bg-[#F5F4F1]">
                         {img && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={img} alt={p.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                         )}
                       </div>
                       <div className="p-2">
-                        <p className="line-clamp-2 text-[11px] font-semibold leading-tight text-[var(--color-text-primary)]">{p.name}</p>
-                        <p className="mt-1 text-[11px] font-bold text-[var(--color-accent)]">{formatRupiah(p.price)}</p>
+                        <p className="line-clamp-2 text-[11px] font-semibold leading-tight text-[#1C1C1A]">{p.name}</p>
+                        <p className="mt-1 text-[11px] font-bold text-[#B8874F]">{formatRupiah(p.price)}</p>
                       </div>
                     </button>
                   )
@@ -132,26 +137,38 @@ function ProductMessageCard({ product }) {
   }
   const img = Array.isArray(product.images) ? product.images[0] : product.image
   return (
-    <div className="space-y-2">
+    <div className="w-44 space-y-2">
       {img && (
-        <div className="overflow-hidden rounded-xl bg-black/20">
+        <div className="overflow-hidden rounded-lg bg-black/10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img} alt={product.name} className="h-32 w-full object-cover" />
+          <img src={img} alt={product.name} className="h-24 w-full object-cover" />
         </div>
       )}
       <div>
-        <p className="text-[10px] uppercase tracking-wider opacity-70">{product.category}</p>
+        <p className="text-[9px] uppercase tracking-wider opacity-70">{product.category}</p>
         <p className="mt-0.5 text-xs font-semibold leading-snug">{product.name}</p>
         <p className="mt-1 text-xs font-bold">{formatRupiah(product.price)}</p>
       </div>
       <a
-        href={`/products/${product.slug}`}
+        href={`/produk/${product.slug}`}
         target="_blank"
         rel="noreferrer"
-        className="mt-1 inline-flex w-full items-center justify-center gap-1 rounded-full bg-white/20 py-1.5 text-[10px] font-semibold hover:bg-white/30 transition-colors"
+        className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-[#1C1C1A] py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-[#D4A373]"
       >
         Lihat Produk →
       </a>
+    </div>
+  )
+}
+
+function ConvAvatar({ initials, active = false }) {
+  return (
+    <div className="shrink-0">
+      <div className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold ${
+        active ? 'bg-[#1C1C1A] text-white' : 'bg-[#EFE7DA] text-[#6B4F2A]'
+      }`}>
+        {initials}
+      </div>
     </div>
   )
 }
@@ -182,6 +199,7 @@ export default function AdminChatPage() {
   const [inputText, setInputText] = useState('')
   const [isCustomerTyping, setIsCustomerTyping] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [mobileOpenChat, setMobileOpenChat] = useState(false)
   const typingTimeoutRef = useRef(null)
   const lastTypingSentRef = useRef(0)
   const messagesEndRef = useRef(null)
@@ -294,6 +312,7 @@ export default function AdminChatPage() {
 
   const handleSelectConv = (id) => {
     setActiveId(id)
+    setMobileOpenChat(true)
     loadActiveMessages(id)
     setConversations(prev => prev.map(c => (c.id === id ? { ...c, unread: 0 } : c)))
   }
@@ -336,43 +355,44 @@ export default function AdminChatPage() {
   )
 
   // Jangan render apa-apa sampai guard selesai
-  if (!guardOk) return <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"><p className="text-sm text-[var(--color-text-secondary)]">Memuat...</p></div>
+  if (!guardOk) return <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-8 lg:px-12"><p className="text-sm text-[#9C9589]">Memuat...</p></div>
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-8 lg:px-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-[var(--font-display)] text-2xl text-[var(--color-text-primary)]">Live Chat CS</h1>
-          <p className="text-xs text-[var(--color-text-secondary)]">Kelola & jawab pertanyaan pelanggan secara langsung</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 border border-emerald-200">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            CS Online Active
-          </span>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9C9589]">Customer Service</p>
+          <h1 className="mt-1.5 font-[var(--font-display)] text-2xl font-medium text-[#1C1C1A]">Live Chat</h1>
+          <p className="mt-1.5 text-sm text-[#9C9589]">Balas pertanyaan pelanggan secara real-time</p>
         </div>
       </div>
 
-      <div className="grid h-[calc(100vh-220px)] min-h-[500px] grid-cols-1 overflow-hidden rounded-3xl border border-[var(--color-bg-section)] bg-[var(--color-surface)] shadow-lg lg:grid-cols-12">
-        <div className="border-r border-[var(--color-bg-section)] lg:col-span-4 flex flex-col bg-[var(--color-bg-warm)]/30">
-          <div className="border-b border-[var(--color-bg-section)] p-3.5">
+      <div className="grid h-[calc(100dvh-150px)] min-h-[520px] grid-cols-1 overflow-hidden rounded-2xl border border-[#EEEBE4] bg-white shadow-sm lg:h-[calc(100vh-220px)] lg:min-h-[600px] lg:grid-cols-12">
+        {/* ── Conversation List ── */}
+        <div className={`${mobileOpenChat ? 'hidden' : 'flex'} min-w-0 flex-col border-r border-[#EEEBE4] bg-[#FAFAF9] lg:flex lg:col-span-4`}>
+          <div className="border-b border-[#EEEBE4] px-4 py-3.5">
             <div className="relative">
+              <svg className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#9C9589]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
+              </svg>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari nama atau isi pesan..."
-                className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-white py-2 pl-9 pr-3 text-xs outline-none focus:border-[var(--color-accent)] shadow-sm"
+                className="w-full rounded-xl border border-[#EEEBE4] bg-white py-2.5 pl-10 pr-4 text-xs outline-none focus:border-[#D4A373]"
               />
-              <svg className="absolute left-3 top-2.5 h-4 w-4 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
-              </svg>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-[var(--color-bg-section)]/60">
+          <div className="flex items-center justify-between px-4 pb-2 pt-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9C9589]">Percakapan</p>
+            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#6B655A] shadow-sm">{filteredConversations.length}</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto divide-y divide-[#F5F4F1]">
             {filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-xs text-[var(--color-text-secondary)]">
+              <div className="p-8 text-center text-xs text-[#9C9589]">
                 {conversations.length === 0 ? 'Belum ada percakapan.' : 'Percakapan tidak ditemukan.'}
               </div>
             ) : (
@@ -382,30 +402,29 @@ export default function AdminChatPage() {
                   <button
                     key={c.id}
                     onClick={() => handleSelectConv(c.id)}
-                    className={`flex w-full items-start gap-3 p-4 text-left transition-all ${
+                    className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${
                       isActive
-                        ? 'bg-[var(--color-surface)] shadow-sm border-l-4 border-l-[var(--color-accent)]'
-                        : 'hover:bg-white/60'
+                        ? 'bg-white shadow-[inset_3px_0_0_0_#D4A373]'
+                        : 'hover:bg-[#F5F4F1]/70'
                     }`}
                   >
-                    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-xs font-bold text-white shadow-sm">
-                      {c.userAvatar}
-                      {c.online && (
-                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white" />
-                      )}
-                    </div>
+                    <ConvAvatar initials={c.userAvatar} active={isActive} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="truncate text-xs font-semibold text-[var(--color-text-primary)]">{c.userName}</h4>
-                        <span className="text-[10px] text-[var(--color-text-secondary)]">{c.lastTime}</span>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <h4 className="truncate text-[13px] font-semibold text-[#1C1C1A]">{c.userName}</h4>
+                        <span className="shrink-0 text-[10px] text-[#9C9589]">{c.lastTime}</span>
                       </div>
-                      <p className="mt-1 truncate text-xs text-[var(--color-text-secondary)]">{c.lastMessage}</p>
+                      <div className="mt-0.5 flex items-center justify-between gap-2">
+                        <p className={`truncate text-[11px] ${c.unread > 0 ? 'font-semibold text-[#1C1C1A]' : 'text-[#9C9589]'}`}>
+                          {c.lastMessage || 'Memulai percakapan…'}
+                        </p>
+                        {c.unread > 0 && (
+                          <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                            {c.unread}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {c.unread > 0 && (
-                      <span className="ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow">
-                        {c.unread}
-                      </span>
-                    )}
                   </button>
                 )
               })
@@ -413,66 +432,70 @@ export default function AdminChatPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-8 flex flex-col bg-white min-h-0">
+        {/* ── Chat Pane ── */}
+        <div className={`${mobileOpenChat ? 'flex' : 'hidden'} min-w-0 flex-col bg-white lg:flex lg:col-span-8`}>
           {activeConv ? (
             <>
-              <div className="flex items-center justify-between border-b border-[var(--color-bg-section)] p-4 bg-[var(--color-bg-warm)]/20">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-accent)] text-xs font-bold text-white shadow-sm">
-                    {activeConv.userAvatar}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-[var(--color-text-primary)]">{activeConv.userName}</h3>
-                    <p className="text-[10px] text-[var(--color-text-secondary)] flex items-center gap-1">
-                      <span>{activeConv.userEmail}</span>
+              <div className="flex items-center justify-between gap-3 border-b border-[#EEEBE4] px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <button
+                    onClick={() => setMobileOpenChat(false)}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#EEEBE4] text-[#6B655A] transition-colors hover:bg-[#F5F4F1] lg:hidden"
+                    title="Kembali ke daftar"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                    </svg>
+                  </button>
+                  <ConvAvatar initials={activeConv.userAvatar} active />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate text-sm font-semibold text-[#1C1C1A]">{activeConv.userName}</h3>
                       {isCustomerTyping && (
-                        <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[var(--color-bg-section)] px-2 py-0.5 text-[9px] font-medium text-[var(--color-text-primary)]">
-                          <TypingDots /> sedang mengetik…
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#F5F4F1] px-2.5 py-1 text-[10px] font-medium text-[#6B655A]">
+                          <TypingDots /> mengetik
                         </span>
                       )}
-                    </p>
+                    </div>
+                    <p className="truncate text-[11px] text-[#9C9589]">{activeConv.userEmail}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-[var(--color-bg-section)] px-3 py-1 text-[10px] font-medium text-[var(--color-text-secondary)]">
-                    Customer ID #{activeConv.id}
-                  </span>
-                </div>
+                <span className="hidden shrink-0 rounded-lg bg-[#F5F4F1] px-2.5 py-1 text-[10px] font-medium text-[#6B655A] sm:inline-flex">
+                  Customer ID #{activeConv.id}
+                </span>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-[var(--color-bg-warm)]/10">
+              <div className="flex-1 overflow-y-auto bg-[#FAFAF9] p-4 space-y-3 sm:p-5">
                 {activeMessages.map((m) => {
                   const isAdmin = m.sender === 'admin'
                   const isProduct = m.messageType === 'product'
                   return (
                     <div key={m.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                      <div className="flex items-end gap-2 max-w-[75%]">
+                      <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%]">
                         {!isAdmin && (
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-text-secondary)]/20 text-[9px] font-bold text-[var(--color-text-primary)]">
-                            {activeConv.userAvatar}
+                          <div className="mb-4 hidden shrink-0 sm:flex">
+                            <ConvAvatar initials={activeConv.userAvatar} />
                           </div>
                         )}
                         <div
-                          className={`rounded-2xl text-xs shadow-sm ${
+                          className={`text-xs ${
                             isAdmin
-                              ? 'bg-[var(--color-text-primary)] text-white rounded-br-none'
-                              : 'bg-white border border-[var(--color-bg-section)] text-[var(--color-text-primary)] rounded-bl-none'
-                          } ${isProduct ? 'p-2' : 'px-4 py-2.5'}`}
+                              ? 'rounded-2xl rounded-br-sm bg-[#1C1C1A] text-white shadow-sm'
+                              : 'rounded-2xl rounded-bl-sm border border-[#EEEBE4] bg-white text-[#1C1C1A] shadow-sm'
+                          } ${isProduct ? 'p-2.5' : 'px-3.5 py-2.5'}`}
                         >
                           {isProduct ? (
-                            <div className="p-1.5">
-                              <p className="mb-1.5 text-[10px] uppercase tracking-wider opacity-70">📦 Shared Product</p>
+                            <div>
+                              <p className={`mb-2 text-[9px] font-bold uppercase tracking-wider ${isAdmin ? 'text-white/60' : 'text-[#B8874F]'}`}>
+                                Produk dibagikan
+                              </p>
                               <ProductMessageCard product={m.metadata?.product} />
-                              <span className={`mt-2 block text-[9px] ${isAdmin ? 'text-white/70' : 'text-[var(--color-text-secondary)]'}`}>
-                                {m.time}
-                              </span>
+                              <span className={`mt-2 block text-[9px] ${isAdmin ? 'text-white/60' : 'text-[#9C9589]'}`}>{m.time}</span>
                             </div>
                           ) : (
                             <>
                               <p className="leading-relaxed">{m.text}</p>
-                              <span className={`mt-1 block text-[9px] ${isAdmin ? 'text-white/70' : 'text-[var(--color-text-secondary)]'}`}>
-                                {m.time}
-                              </span>
+                              <span className={`mt-1 block text-[9px] ${isAdmin ? 'text-white/60' : 'text-[#9C9589]'}`}>{m.time}</span>
                             </>
                           )}
                         </div>
@@ -480,12 +503,12 @@ export default function AdminChatPage() {
                     </div>
                   )
                 })}
-                {isCustomerTyping && (
+                {isCustomerTyping && !isProduct && (
                   <div className="flex items-start">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-text-secondary)]/20 text-[9px] font-bold text-[var(--color-text-primary)]">
-                      {activeConv.userAvatar}
+                    <div className="hidden shrink-0 sm:flex">
+                      <ConvAvatar initials={activeConv.userAvatar} />
                     </div>
-                    <div className="rounded-2xl rounded-bl-none border border-[var(--color-bg-section)] bg-white px-4 py-2.5 shadow-sm">
+                    <div className="rounded-2xl rounded-bl-sm border border-[#EEEBE4] bg-white px-4 py-2.5 text-[#6B655A] shadow-sm">
                       <TypingDots />
                     </div>
                   </div>
@@ -493,31 +516,30 @@ export default function AdminChatPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="border-t border-[var(--color-bg-section)] bg-[var(--color-bg-warm)]/30 p-2.5 flex gap-2 overflow-x-auto no-scrollbar">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] self-center px-1">Template:</span>
-                {quickReplies.map((qr, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSendReply(qr)}
-                    className="whitespace-nowrap rounded-xl border border-[var(--color-accent)]/30 bg-white px-3 py-1.5 text-[10px] font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-accent)] hover:text-white transition-all flex-shrink-0 shadow-2xs"
-                  >
-                    {qr}
-                  </button>
-                ))}
-              </div>
-
-              <div className="border-t border-[var(--color-bg-section)] p-4 bg-white">
+              <div className="border-t border-[#EEEBE4] bg-white">
+                <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 py-3">
+                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#9C9589]">Template</span>
+                  {quickReplies.map((qr, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSendReply(qr)}
+                      className="shrink-0 whitespace-nowrap rounded-lg border border-[#EEEBE4] bg-[#FAFAF9] px-3 py-1.5 text-[11px] font-medium text-[#6B655A] transition-all hover:border-[#D4A373] hover:bg-[#D4A373] hover:text-white"
+                    >
+                      {qr}
+                    </button>
+                  ))}
+                </div>
                 <form
                   onSubmit={(e) => {
                     e.preventDefault()
                     handleSendReply()
                   }}
-                  className="flex items-center gap-3"
+                  className="flex items-center gap-2.5 border-t border-[#F5F4F1] p-3.5"
                 >
                   <button
                     type="button"
                     onClick={() => setPickerOpen(true)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-text-secondary)]/20 bg-white text-[var(--color-text-primary)] transition-all hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#EEEBE4] bg-white text-[#6B655A] transition-all hover:border-[#D4A373] hover:bg-[#D4A373] hover:text-white"
                     title="Share Produk"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -529,14 +551,14 @@ export default function AdminChatPage() {
                     value={inputText}
                     onChange={handleInputChange}
                     placeholder="Balas pesan pelanggan..."
-                    className="flex-1 rounded-2xl border border-[var(--color-text-secondary)]/20 bg-[var(--color-bg-warm)]/50 px-4 py-3 text-xs outline-none focus:border-[var(--color-accent)] shadow-inner"
+                    className="flex-1 rounded-xl border border-[#EEEBE4] bg-[#FAFAF9] px-4 py-2.5 text-xs outline-none focus:border-[#D4A373] focus:bg-white"
                   />
                   <button
                     type="submit"
                     disabled={!inputText.trim()}
-                    className="flex h-10 px-5 items-center justify-center gap-2 rounded-2xl bg-[var(--color-text-primary)] text-xs font-medium text-white transition-all hover:bg-[var(--color-accent)] disabled:opacity-40 shadow-sm"
+                    className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#1C1C1A] px-5 text-xs font-semibold text-white transition-all hover:bg-[#D4A373] disabled:opacity-40"
                   >
-                    <span>Kirim</span>
+                    <span className="hidden sm:inline">Kirim</span>
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12zm0 0h7.5" />
                     </svg>
@@ -545,7 +567,7 @@ export default function AdminChatPage() {
               </div>
             </>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-xs text-[var(--color-text-secondary)]">
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-xs text-[#9C9589]">
               Pilih percakapan dari daftar di sebelah kiri untuk melihat pesan.
             </div>
           )}

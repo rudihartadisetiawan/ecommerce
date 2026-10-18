@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useToast } from '@/components/ui/Toast'
 
 const mockUsers = [
   { id: 1, name: 'Rudi', email: 'owner@gaul.com', role: 'super_admin', createdAt: '2026-01-01' },
@@ -17,7 +18,7 @@ export default function AdminUsersPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '' })
-  const [msg, setMsg] = useState('')
+  const addToast = useToast()
   const [loginLogs, setLoginLogs] = useState([])
   const [showLogs, setShowLogs] = useState(false)
   const [logsLoading, setLogsLoading] = useState(false)
@@ -48,7 +49,7 @@ export default function AdminUsersPage() {
   const handleCreateUser = async (e) => {
     e.preventDefault()
     if (!form.name || !form.email || !form.password) {
-      setMsg('❌ Semua field wajib diisi!')
+      addToast('Semua field wajib diisi.', 'error')
       return
     }
 
@@ -62,15 +63,14 @@ export default function AdminUsersPage() {
       if (res.ok) {
         setShowAddModal(false)
         setForm({ name: '', email: '', password: '' })
-        setMsg('✅ Akun Staff berhasil ditambahkan!')
+        addToast('Akun staff berhasil ditambahkan.', 'success')
         loadUsers()
       } else {
-        setMsg('❌ ' + (data.error || 'Gagal membuat akun staff.'))
+        addToast(data.error || 'Gagal membuat akun staff.', 'error')
       }
     } catch {
-      setMsg('❌ Terjadi kesalahan jaringan.')
+      addToast('Terjadi kesalahan jaringan.', 'error')
     }
-    setTimeout(() => setMsg(''), 4000)
   }
 
   const [logFilter, setLogFilter] = useState('all') // 'all' | 'login' | 'admin'
@@ -107,20 +107,19 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId, role: newRole }),
       })
       if (res.ok) {
-        setMsg('✅ Role pengguna berhasil diperbarui.')
+        addToast('Role pengguna berhasil diperbarui.', 'success')
         loadUsers()
       } else {
         const data = await res.json()
-        setMsg('❌ ' + (data.error || 'Gagal memperbarui role.'))
+        addToast(data.error || 'Gagal memperbarui role.', 'error')
       }
     } catch {
-      setMsg('❌ Terjadi kesalahan jaringan.')
+      addToast('Terjadi kesalahan jaringan.', 'error')
     }
-    setTimeout(() => setMsg(''), 4000)
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8 lg:px-12">
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -149,13 +148,6 @@ export default function AdminUsersPage() {
           </button>
         )}
       </div>
-
-      {/* Notification Message */}
-      {msg && (
-        <div className="mb-6 rounded-2xl bg-[var(--color-bg-section)] px-4 py-3 text-xs font-medium text-[var(--color-text-primary)] shadow-xs">
-          {msg}
-        </div>
-      )}
 
       {/* Access Warning Banner if not Super Admin */}
       {!isSuperAdmin && (

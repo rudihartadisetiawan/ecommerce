@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Navigation from '../../../components/shop/Navigation'
 import ProductCard from '../../../components/shop/ProductCard'
@@ -33,13 +33,30 @@ export default function CatalogPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [loadingMore, setLoadingMore] = useState(false)
   const [recentlyViewed, setRecentlyViewed] = useState([])
+  const [allCategories, setAllCategories] = useState([])
+  const recentScrollRef = useRef(null)
+
+  const scrollRecent = (direction) => {
+    if (recentScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -260 : 260
+      recentScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
 
   useEffect(() => { setRecentlyViewed(getRecentlyViewed()) }, [])
+
+  // Daftar kategori lengkap — independen dari sort/pagination
+  useEffect(() => {
+    fetch('/api/products?only=categories')
+      .then(r => r.json())
+      .then(cats => Array.isArray(cats) && setAllCategories(cats))
+      .catch(() => {})
+  }, [])
 
   const fetchProducts = async (pageNum, append = false) => {
     const params = new URLSearchParams({ page: pageNum, limit: '12' })
     if (searchQuery) params.set('q', searchQuery)
-    if (filters.categories.length === 1) params.set('category', filters.categories[0])
+    if (filters.categories.length > 0) params.set('category', filters.categories.join(','))
     if (sortBy !== 'newest') params.set('sort', sortBy)
 
     if (!append) setLoading(true)
@@ -77,16 +94,16 @@ export default function CatalogPage() {
     if (cat) setFilters(f => ({ ...f, categories: [cat] }))
   }, [])
 
-  const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products])
+  // Kategori sidebar: pakai daftar lengkap dari API; fallback ke kategori dari produk termuat
+  const categories = useMemo(() => {
+    const fromApi = allCategories.length ? allCategories : null
+    const fromLoaded = [...new Set(products.map((p) => p.category).filter(Boolean))]
+    return fromApi || fromLoaded
+  }, [allCategories, products])
 
-  // Client-side filter untuk loaded products (search, size, price)
+  // Client-side filter untuk loaded products (size, price) — kategori & search via API
   const filtered = useMemo(() => {
     let result = [...products]
-    // Client side search — search via API sudah jalan, ini tambahan untuk hasil loaded
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      result = result.filter((p) => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
-    }
     if (filters.sizes.length > 0) {
       result = result.filter((p) => (p.sizes || []).some((s) => filters.sizes.includes(s)))
     }
@@ -94,7 +111,7 @@ export default function CatalogPage() {
       result = result.filter((p) => p.price >= filters.priceRange.min && p.price <= filters.priceRange.max)
     }
     return result
-  }, [searchQuery, filters, products])
+  }, [filters, products])
 
   const handleReset = () => setFilters({ categories: [], sizes: [], priceRange: null })
 
@@ -164,10 +181,10 @@ export default function CatalogPage() {
                     variants={containerVariants}
                     initial="hidden"
                     animate="show"
-                    className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4"
+                    className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
                   >
-                    {filtered.map((product) => (
-                      <motion.div key={product.id} variants={itemVariants}>
+                    {filtered.map((product, index) => (
+                      <motion.div key={product.id ? `prod-${product.id}-${index}` : `prod-${index}`} variants={itemVariants}>
                         <ProductCard product={product} />
                       </motion.div>
                     ))}
@@ -191,12 +208,56 @@ export default function CatalogPage() {
       </main>
 
       {recentlyViewed.length > 0 && (
-        <section className="border-t border-[var(--color-bg-section)] py-12">
+        <section className="border-t border-black/5 bg-[var(--color-bg-section)]/40 py-10">
           <Container>
-            <h2 className="mb-6 font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">Baru Dilihat</h2>
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
-              {recentlyViewed.map(p => (
-                <ProductCard key={p.id} product={p} />
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="font-[var(--font-display)] text-lg text-[var(--color-text-primary)] sm:text-xl">
+                  Baru Dilihat
+                </h2>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Produk yang baru saja Anda buka
+                </p>
+              </div>
+
+              {recentlyViewed.length > 2 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => scrollRecent('left')}
+                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white text-[var(--color-text-primary)] shadow-2xs transition-all hover:bg-black/5 active:scale-95"
+                    aria-label="Scroll kiri"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollRecent('right')}
+                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white text-[var(--color-text-primary)] shadow-2xs transition-all hover:bg-black/5 active:scale-95"
+                    aria-label="Scroll kanan"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Horizontal Scroll Track — Compact Cards */}
+            <div
+              ref={recentScrollRef}
+              className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-3 pt-1 scroll-smooth snap-x snap-mandatory sm:mx-0 sm:gap-4 sm:px-0 [scrollbar-width:thin]"
+            >
+              {recentlyViewed.map((p, index) => (
+                <div
+                  key={p.id ? `rv-${p.id}-${index}` : `rv-${index}`}
+                  className="w-36 shrink-0 snap-start sm:w-44"
+                >
+                  <ProductCard product={p} />
+                </div>
               ))}
             </div>
           </Container>

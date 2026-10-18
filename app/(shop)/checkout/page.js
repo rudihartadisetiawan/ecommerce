@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useCart } from '@/lib/cart-context'
+import useStockMap from '@/lib/use-stock'
 import Navigation from '@/components/shop/Navigation'
 import Container from '@/components/ui/Container'
 
@@ -50,6 +51,7 @@ export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { stockFor, loading: stockLoading } = useStockMap(items)
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', zip: '' })
   const isGuest = status !== 'authenticated'
@@ -57,6 +59,16 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+
+  // ── Cek stok realtime — blokir pembayaran jika ada item habis/jumlah melebihi stok ──
+  const stockIssues = []
+  for (const i of items) {
+    const s = stockFor(i)
+    if (s !== null && (s === 0 || s < (i.qty ?? 1))) {
+      stockIssues.push({ name: i.name, size: i.size, colorName: i.colorName, qty: i.qty, stock: s })
+    }
+  }
+  const hasStockProblem = stockIssues.length > 0
 
   // RajaOngkir state
   const [provinces, setProvinces] = useState([])
@@ -157,6 +169,10 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (hasStockProblem) {
+      setErrorMsg('Ada item dengan stok tidak mencukupi. Periksa kembali keranjang Anda.')
+      return
+    }
     const newErrors = {}
     if (!form.name) newErrors.name = 'Wajib diisi'
     if (isGuest && !form.email) newErrors.email = 'Wajib diisi untuk guest'
@@ -197,7 +213,7 @@ export default function CheckoutPage() {
       })
 
       const order = await res.json()
-      if (!res.ok) { setErrorMsg(order.error || 'Gagal membuat pesanan'); setLoading(false); return }
+      if (!res.ok) { setErrorMsg(order.message || order.error || 'Gagal membuat pesanan'); setLoading(false); return }
 
       const midRes = await fetch('/api/midtrans/create-transaction', {
         method: 'POST',
@@ -218,7 +234,7 @@ export default function CheckoutPage() {
       window.snap.pay(mid.token, {
           onSuccess: async () => {
             clearCart()
-            // Sync status dari Midtrans — paksa paid untuk sandbox (webhook tidak masuk di localhost)
+            // Sync status dari Midtrans — force=paid hanya dihormati server saat sandbox + ALLOW_TEST_PAYMENT
             try {
               await fetch('/api/midtrans/check-status?force=paid', {
                 method: 'POST',
@@ -271,13 +287,13 @@ export default function CheckoutPage() {
                 {/* Alamat Pengiriman */}
                 <section>
                   <h2 className="mb-4 text-sm font-semibold text-[var(--color-text-primary)]">Alamat Pengiriman</h2>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {[
                       { name: 'name', label: 'Nama Lengkap', type: 'text' },
                       { name: 'phone', label: 'No. HP', type: 'tel' },
-                      { name: 'address', label: 'Alamat Lengkap (Jalan, No, RT/RW)', type: 'text' },
+                      { name: 'address', label: 'Alamat Lengkap (Jalan, No, RT/RW)', type: 'text', span: true },
                     ].map(field => (
-                      <div key={field.name}>
+                      <div key={field.name} className={field.span ? 'sm:col-span-2' : ''}>
                         <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{field.label}</label>
                         <input
                           type={field.type}
@@ -329,14 +345,14 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* Kode Pos (opsional) */}
-                    <div>
+                    <div className="sm:col-span-2">
                       <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Kode Pos <span className="text-[var(--color-text-secondary)]/50">(opsional)</span></label>
                       <input
                         type="text"
                         name="zip"
                         value={form.zip}
                         onChange={handleChange}
-                        className="w-full rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-accent)] placeholder:text-[var(--color-text-secondary)]/50"
+                        className="w-full sm:max-w-[240px] rounded-xl border border-[var(--color-text-secondary)]/20 bg-transparent px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-accent)] placeholder:text-[var(--color-text-secondary)]/50"
                         placeholder="Contoh: 50123"
                       />
                     </div>
@@ -363,7 +379,7 @@ export default function CheckoutPage() {
                   )}
 
                   {shippingOptions.length > 0 && (
-                    <div className="space-y-2.5">
+                    <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2">
                       {shippingOptions.map((opt, i) => {
                         const key = `${opt.courier}-${opt.service}`
                         const isSelected = selectedShipping && `${selectedShipping.courier}-${selectedShipping.service}` === key
@@ -498,12 +514,47 @@ export default function CheckoutPage() {
 
                   {errorMsg && <p className="mt-3 text-xs text-red-500">{errorMsg}</p>}
 
+                  {(hasStockProblem || stockLoading) && (
+                    <div className="mt-3 rounded-xl bg-red-50 px-4 py-3">
+                      {stockLoading ? (
+                        <p className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+                          Memeriksa stok...
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-xs font-semibold text-red-600">
+                            {stockIssues.length} item tidak bisa dibayar (stok habis/berkurang):
+                          </p>
+                          <ul className="mt-1.5 space-y-1 text-[11px] text-red-500">
+                            {stockIssues.map((s, idx) => (
+                              <li key={idx}>
+                                • {s.name} — {s.size}{s.colorName ? ` · ${s.colorName}` : ''} (diminta {s.qty}, tersisa {s.stock})
+                              </li>
+                            ))}
+                          </ul>
+                          <Link href="/cart" className="mt-2 inline-block text-[11px] font-semibold text-red-600 underline underline-offset-2">
+                            Perbaiki di keranjang
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={loading || !selectedShipping}
+                    disabled={loading || !selectedShipping || hasStockProblem || stockLoading}
                     className="mt-6 flex w-full items-center justify-center rounded-full bg-[var(--color-text-primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:brightness-125 disabled:opacity-50"
                   >
-                    {loading ? 'Memproses...' : !selectedShipping ? 'Pilih pengiriman dulu' : 'Bayar'}
+                    {stockLoading
+                      ? 'Memeriksa stok...'
+                      : hasStockProblem
+                        ? 'Stok tidak mencukupi'
+                        : loading
+                          ? 'Memproses...'
+                          : !selectedShipping
+                            ? 'Pilih pengiriman dulu'
+                            : 'Bayar'}
                   </button>
                   <p className="mt-3 text-center text-xs text-[var(--color-text-secondary)]">Pembayaran aman via Midtrans</p>
                 </div>

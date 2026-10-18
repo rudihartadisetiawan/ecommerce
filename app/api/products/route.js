@@ -15,11 +15,18 @@ export async function GET(request) {
   const where = { AND: [] }
   if (!all) where.AND.push({ isActive: true })
   if (q) where.AND.push({ name: { contains: q } })
-  if (category) where.AND.push({ category })
+  const cats = (category || '').split(',').map(c => c.trim()).filter(Boolean)
+  if (cats.length) where.AND.push({ category: { in: cats } })
   if (featuredOnly) where.AND.push({ isFeatured: true })
 
   if (all) {
     try { await requireAdmin() } catch { return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 }) }
+  }
+
+  // Daftar kategori distinct (untuk filter sidebar) — tidak terpengaruh sort/pagination
+  if (searchParams.get('only') === 'categories') {
+    const rows = await prisma.product.findMany({ where, select: { category: true }, distinct: ['category'] })
+    return NextResponse.json(rows.map(r => r.category))
   }
 
   const sort = searchParams.get('sort')

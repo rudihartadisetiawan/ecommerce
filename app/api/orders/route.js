@@ -28,7 +28,8 @@ export async function GET(request) {
   if (!session) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
 
   let where = {}
-  if (searchParams.get('all') === 'true' && (session.user.role === 'admin' || session.user.role === 'super_admin')) {
+  const isStaffView = searchParams.get('all') === 'true' && (session.user.role === 'admin' || session.user.role === 'super_admin')
+  if (isStaffView) {
     where = {}
   } else {
     where = { userId: Number(session.user.id) }
@@ -36,10 +37,16 @@ export async function GET(request) {
 
   const orders = await prisma.order.findMany({
     where,
-    include: { items: { include: { product: true } } },
+    include: { items: { include: { product: true } }, user: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
   })
-  return NextResponse.json(orders.map(serializeOrder))
+
+  // S-23: Staff (role admin) tidak boleh menerima nominal pembayaran — hanya owner (super_admin)
+  let result = orders.map(serializeOrder)
+  if (isStaffView && session.user.role === 'admin') {
+    result = result.map(o => ({ ...o, total: null, paymentRef: null }))
+  }
+  return NextResponse.json(result)
 }
 
 function genOrderId() {
@@ -66,7 +73,7 @@ export async function POST(request) {
   const ip = getClientIP(request)
   const rateLimitKey = session?.user?.id ? `order:${session.user.id}` : `order:${ip}`
   if (!rateLimit(rateLimitKey, session?.user?.id ? 10 : 3, 60000)) {
-    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    return NextResponse.json({ error: 'TOO_MANY_REQUESTS', message: 'Terlalu banyak pesanan dalam waktu singkat. Coba lagi sebentar lagi.' }, { status: 429 })
   }
 
   // Validasi & hitung subtotal dari DB (jangan percaya harga klien)
@@ -79,22 +86,29 @@ export async function POST(request) {
     }
     const product = await prisma.product.findUnique({ where: { id: Number(it.productId) } })
     if (!product || !product.isActive) {
-      return NextResponse.json({ error: 'PRODUCT_UNAVAILABLE', productId: it.productId }, { status: 400 })
+      return NextResponse.json({ error: 'PRODUCT_UNAVAILABLE', productId: it.productId, message: 'Salah satu produk tidak tersedia.' }, { status: 400 })
     }
     // Cek stok per varian jika tersedia
     const varKey = `${it.variant?.size || ''}-${it.variant?.colorName || it.variant?.color || ''}`
     const varStock = product.stockPerVariant?.[varKey]
     if (varStock !== undefined && varStock !== null) {
       if (varStock < it.qty) {
-        return NextResponse.json({ error: 'OUT_OF_STOCK', productId: it.productId, variant: varKey }, { status: 400 })
+        return NextResponse.json({ error: 'OUT_OF_STOCK', productId: it.productId, variant: varKey, message: 'Maaf, stok tidak mencukupi untuk pesanan ini.' }, { status: 400 })
       }
     } else if (product.stock < it.qty) {
-      return NextResponse.json({ error: 'OUT_OF_STOCK', productId: it.productId }, { status: 400 })
+      return NextResponse.json({ error: 'OUT_OF_STOCK', productId: it.productId, message: 'Maaf, stok tidak mencukupi untuk pesanan ini.' }, { status: 400 })
     }
     total += product.price * it.qty
+    // Simpan nama warna di variant.color — hex hanya dipakai untuk swatch
+    const variant = { ...it.variant }
+    if (variant.color && /^#[0-9a-fA-F]{6}$/.test(String(variant.color))) {
+      const m = (product.colors || []).find(c => String(c.hex || '').toLowerCase() === String(variant.color).toLowerCase())
+      if (m?.name) variant.color = m.name
+    }
+    variant.colorName = variant.colorName || variant.color
     orderItemsData.push({
       productId: product.id,
-      variant: it.variant,
+      variant,
       qty: it.qty,
       priceAtPurchase: product.price,
     })
@@ -130,7 +144,9 @@ export async function POST(request) {
   }
 
   // S-03 fix: Wrap order + coupon increment + stock decrement dalam transaksi
-  const order = await prisma.$transaction(async (tx) => {
+  let order
+  try {
+    order = await prisma.$transaction(async (tx) => {
     const created = await tx.order.create({
       data: {
         id,
@@ -176,7 +192,14 @@ export async function POST(request) {
     }
 
     return created
-  })
+    })
+  } catch (e) {
+    if (e?.message === 'OUT_OF_STOCK') {
+      return NextResponse.json({ error: 'OUT_OF_STOCK', message: 'Maaf, stok tidak mencukupi untuk pesanan ini.' }, { status: 400 })
+    }
+    console.error('[orders POST] gagal membuat pesanan:', e)
+    return NextResponse.json({ error: 'ORDER_CREATE_FAILED', message: 'Gagal membuat pesanan. Coba lagi.' }, { status: 500 })
+  }
 
   return NextResponse.json(serializeOrder(order), { status: 201 })
 }

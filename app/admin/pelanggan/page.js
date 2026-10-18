@@ -72,11 +72,11 @@ export default function AdminPelangganPage() {
   )
 
   if (status !== 'authenticated' || loading) {
-    return <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-[var(--color-text-secondary)]">Memuat...</div>
+    return <div className="mx-auto max-w-[1600px] px-4 py-8 text-sm text-[var(--color-text-secondary)]">Memuat...</div>
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8 lg:px-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <Link href="/admin" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">← Kembali ke CMS</Link>
